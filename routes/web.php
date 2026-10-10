@@ -21,3 +21,6 @@ Route::get('/hardware', [HardwareController::class, 'index'])->name('hardware.in
 // --- RUTAS DEL MODULO 4 (INTERBLOQUEOS) ---
 Route::get('/deadlocks', [DeadlockController::class, 'index'])
     ->name('deadlocks.index');
+Route::post('/deadlocks/validate',
+    [DeadlockController::class, 'validateMatrices'])
+    ->name('deadlocks.validate');
