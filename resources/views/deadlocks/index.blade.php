@@ -138,6 +138,7 @@
 
     <div id="resultado" role="status" aria-live="polite"></div>
     <div id="matriz-necesidad"></div>
+    <div id="resultado-banquero"></div>
 </main>
 
 <script>
@@ -146,6 +147,8 @@
     const resultado = document.getElementById('resultado');
     const contenedorNecesidad =
     document.getElementById('matriz-necesidad');
+    const contenedorBanquero =
+    document.getElementById('resultado-banquero');
 
     function crearTabla(titulo, nombre, procesos, recursos) {
         let html = `<h2>${titulo}</h2>`;
@@ -259,11 +262,152 @@ function mostrarMatrizNecesidad(need) {
     contenedorNecesidad.appendChild(contenedorTabla);
 }
 
+function mostrarResultadoBanquero(datos) {
+
+    // Limpiar resultados anteriores
+    contenedorBanquero.replaceChildren();
+
+    // Mostrar estado del sistema
+    const estado = document.createElement('h2');
+
+    if (datos.safe) {
+        estado.textContent = 'Estado seguro';
+        estado.className = 'ok';
+    } else {
+        estado.textContent = 'Estado inseguro';
+        estado.className = 'error';
+    }
+
+    contenedorBanquero.appendChild(estado);
+
+    // Explicar el resultado
+    const explicacion = document.createElement('p');
+
+    explicacion.textContent = datos.safe
+        ? 'Todos los procesos pueden finalizar en un orden seguro.'
+        : 'No existe una secuencia segura completa. Esto no significa necesariamente que ya exista un interbloqueo.';
+
+    contenedorBanquero.appendChild(explicacion);
+
+    // Mostrar secuencia de procesos
+    const secuencia = document.createElement('p');
+
+    const tituloSecuencia = datos.safe
+        ? 'Secuencia segura: '
+        : 'Procesos que pudieron finalizar: ';
+
+    secuencia.textContent = tituloSecuencia +
+        (datos.sequence.length > 0
+            ? datos.sequence.join(' → ')
+            : 'Ninguno');
+
+    contenedorBanquero.appendChild(secuencia);
+
+    // Titulo de los pasos
+    const titulo = document.createElement('h2');
+    titulo.textContent = 'Ejecución paso a paso';
+
+    contenedorBanquero.appendChild(titulo);
+
+    // Crear tabla
+    const tabla = document.createElement('table');
+    const thead = document.createElement('thead');
+    const filaEncabezado = document.createElement('tr');
+
+    const columnas = [
+        'Paso',
+        'Proceso',
+        'Disponible antes',
+        'Necesidad',
+        'Recursos liberados',
+        'Disponible después'
+    ];
+
+    columnas.forEach(nombre => {
+        const th = document.createElement('th');
+        th.textContent = nombre;
+        filaEncabezado.appendChild(th);
+    });
+
+    thead.appendChild(filaEncabezado);
+    tabla.appendChild(thead);
+
+    const tbody = document.createElement('tbody');
+
+    // Fila de recursos iniciales
+    const inicial = document.createElement('tr');
+
+    const valoresIniciales = [
+        'Inicial',
+        '—',
+        JSON.stringify(
+            datos.steps.length > 0
+                ? datos.steps[0].work_before
+                : datos.work_final
+        ),
+        '—',
+        '—',
+        '—'
+    ];
+
+    valoresIniciales.forEach(valor => {
+        const td = document.createElement('td');
+        td.textContent = valor;
+        inicial.appendChild(td);
+    });
+
+    tbody.appendChild(inicial);
+
+    // Registrar cada proceso que finaliza
+    datos.steps.forEach((paso, indice) => {
+
+        const fila = document.createElement('tr');
+
+        const valores = [
+            indice + 1,
+            paso.process,
+            JSON.stringify(paso.work_before),
+            JSON.stringify(paso.need),
+            JSON.stringify(paso.released),
+            JSON.stringify(paso.work_after)
+        ];
+
+        valores.forEach(valor => {
+            const td = document.createElement('td');
+            td.textContent = valor;
+            fila.appendChild(td);
+        });
+
+        tbody.appendChild(fila);
+    });
+
+    tabla.appendChild(tbody);
+
+    const contenedorTabla = document.createElement('div');
+    contenedorTabla.className = 'tabla';
+    contenedorTabla.appendChild(tabla);
+
+    contenedorBanquero.appendChild(contenedorTabla);
+
+    // Mostrar procesos pendientes
+    if (datos.pending.length > 0) {
+
+        const pendientes = document.createElement('p');
+
+        pendientes.textContent =
+            'Procesos pendientes: ' +
+            datos.pending.join(', ');
+
+        contenedorBanquero.appendChild(pendientes);
+    }
+}
+
     document.getElementById('generar')
         .addEventListener('click', generarMatrices);
 
     formulario.addEventListener('submit', async function(evento) {
         evento.preventDefault();
+        contenedorBanquero.replaceChildren();
 contenedorNecesidad.replaceChildren();
         if (!formulario.reportValidity()) return;
 
@@ -333,8 +477,9 @@ contenedorNecesidad.replaceChildren();
                     `Procesos: ${datos.processes}. ` +
                     `Recursos: ${datos.resources}.`;
                    mostrarMatrizNecesidad(datos.need);
-
-            } else {
+                   mostrarResultadoBanquero(datos);
+            }
+	     else {
                 resultado.className = 'error';
 
                 const errores = datos.errors
@@ -353,6 +498,7 @@ contenedorNecesidad.replaceChildren();
     });
 
     generarMatrices();
+    contenedorBanquero.replaceChildren();
 </script>
 </body>
 </html>

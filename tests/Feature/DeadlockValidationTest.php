@@ -133,5 +133,55 @@ public function test_calcula_matriz_necesidad(): void
         $response->assertJsonPath('safe', false);
         $response->assertJsonPath('sequence', []);
     }
+
+    // PRUEBA 7: Verificar liberacion de recursos
+    public function test_registra_pasos_del_banquero(): void
+    {
+        $response = $this->postJson('/deadlocks/validate', [
+            'allocation' => [
+                [1, 0],
+                [0, 1],
+            ],
+            'maximum' => [
+                [2, 1],
+                [1, 2],
+            ],
+            'available' => [1, 1],
+        ]);
+
+        $response->assertStatus(200);
+
+        $response->assertJsonPath('safe', true);
+        $response->assertJsonPath('steps.0.process', 'P0');
+        $response->assertJsonPath('steps.0.work_before', [1, 1]);
+        $response->assertJsonPath('steps.0.work_after', [2, 1]);
+        $response->assertJsonPath('steps.1.process', 'P1');
+        $response->assertJsonPath('steps.1.work_after', [2, 2]);
+        $response->assertJsonPath('pending', []);
+    }
+
+    // PRUEBA 8: Estado inseguro con proceso pendiente
+    public function test_identifica_procesos_pendientes(): void
+    {
+        $response = $this->postJson('/deadlocks/validate', [
+            'allocation' => [
+                [1, 0],
+                [0, 1],
+            ],
+            'maximum' => [
+                [1, 0],
+                [2, 2],
+            ],
+            'available' => [0, 0],
+        ]);
+
+        $response->assertStatus(200);
+
+        $response->assertJsonPath('safe', false);
+        $response->assertJsonPath('sequence', ['P0']);
+        $response->assertJsonPath('pending', ['P1']);
+        $response->assertJsonPath('steps.0.work_after', [1, 0]);
+    }
+
 }
 

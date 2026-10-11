@@ -102,6 +102,9 @@ $safety = $banker->checkSafety(
     'need' => $need,
 'safe' => $safety['safe'],
 'sequence' => $safety['sequence'],
+'steps' => $safety['steps'],
+'pending' => $safety['pending'],
+'work_final' => $safety['work_final'],
 ]);
     }
 }

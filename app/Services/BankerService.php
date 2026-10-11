@@ -13,14 +13,17 @@ class BankerService
         $processes = count($allocation);
         $resources = count($available);
 
-        // Recursos de trabajo disponibles
+        // Recursos disponibles para la simulacion
         $work = $available;
 
-        // Inicialmente ningun proceso ha terminado
+        // Estado inicial de cada proceso
         $finish = array_fill(0, $processes, false);
 
-        // Secuencia de procesos que pueden finalizar
+        // Orden de finalizacion
         $sequence = [];
+
+        // Registro de cada paso
+        $steps = [];
 
         while (count($sequence) < $processes) {
 
@@ -34,7 +37,7 @@ class BankerService
 
                 $canFinish = true;
 
-                // Verificar si hay suficientes recursos
+                // Comprobar si el proceso puede terminar
                 for ($j = 0; $j < $resources; $j++) {
 
                     if ($need[$i][$j] > $work[$j]) {
@@ -47,7 +50,10 @@ class BankerService
                     continue;
                 }
 
-                // El proceso termina y libera sus recursos
+                // Guardar recursos antes de finalizar
+                $workBefore = $work;
+
+                // Liberar recursos asignados al proceso
                 for ($j = 0; $j < $resources; $j++) {
                     $work[$j] += $allocation[$i][$j];
                 }
@@ -55,17 +61,39 @@ class BankerService
                 $finish[$i] = true;
                 $sequence[] = "P{$i}";
                 $progress = true;
+
+                // Registrar el paso realizado
+                $steps[] = [
+                    'process' => "P{$i}",
+                    'work_before' => $workBefore,
+                    'need' => $need[$i],
+                    'released' => $allocation[$i],
+                    'work_after' => $work,
+                ];
             }
 
-            // No existe otro proceso que pueda avanzar
+            // Si ninguno puede avanzar, detener
             if (!$progress) {
                 break;
             }
         }
 
+        // Identificar los procesos pendientes
+        $pending = [];
+
+        for ($i = 0; $i < $processes; $i++) {
+            if (!$finish[$i]) {
+                $pending[] = "P{$i}";
+            }
+        }
+
         return [
-            'safe' => count($sequence) === $processes,
+            'safe' => count($pending) === 0,
             'sequence' => $sequence,
+            'steps' => $steps,
+            'pending' => $pending,
+            'work_final' => $work,
         ];
     }
 }
+
