@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\BankerService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 
@@ -14,7 +15,10 @@ class DeadlockController extends Controller
     }
 
     // Recibir y validar las matrices
-    public function validateMatrices(Request $request)
+public function validateMatrices(
+    Request $request,
+    BankerService $banker
+)
     {
         $data = $request->validate([
             'allocation' => ['required', 'array', 'min:1'],
@@ -84,12 +88,20 @@ for ($i = 0; $i < $processes; $i++) {
 
     $need[] = $fila;
 }
+// Ejecutar el algoritmo del banquero
+$safety = $banker->checkSafety(
+    $allocation,
+    $need,
+    $available
+);
  return response()->json([
     'success' => true,
     'message' => 'Matrices validadas correctamente',
     'processes' => $processes,
     'resources' => $resources,
     'need' => $need,
+'safe' => $safety['safe'],
+'sequence' => $safety['sequence'],
 ]);
     }
 }

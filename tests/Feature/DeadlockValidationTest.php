@@ -93,5 +93,45 @@ public function test_calcula_matriz_necesidad(): void
         ],
     ]);
   }
+
+    // PRUEBA 5: El sistema se encuentra en estado seguro
+    public function test_detecta_estado_seguro(): void
+    {
+        $response = $this->postJson('/deadlocks/validate', [
+            'allocation' => [
+                [1, 0],
+                [0, 1],
+            ],
+            'maximum' => [
+                [2, 1],
+                [1, 2],
+            ],
+            'available' => [1, 1],
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('safe', true);
+        $response->assertJsonPath('sequence', ['P0', 'P1']);
+    }
+
+    // PRUEBA 6: El sistema se encuentra en estado inseguro
+    public function test_detecta_estado_inseguro(): void
+    {
+        $response = $this->postJson('/deadlocks/validate', [
+            'allocation' => [
+                [1, 0],
+                [0, 1],
+            ],
+            'maximum' => [
+                [2, 1],
+                [1, 2],
+            ],
+            'available' => [0, 0],
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('safe', false);
+        $response->assertJsonPath('sequence', []);
+    }
 }
 
