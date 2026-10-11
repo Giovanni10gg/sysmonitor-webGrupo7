@@ -69,4 +69,29 @@ class DeadlockValidationTest extends TestCase
             'allocation',
         ]);
     }
+// PRUEBA 4: Calculo de la matriz Necesidad
+public function test_calcula_matriz_necesidad(): void
+{
+    $response = $this->postJson('/deadlocks/validate', [
+        'allocation' => [
+            [0, 1, 0],
+            [2, 0, 0],
+        ],
+        'maximum' => [
+            [7, 5, 3],
+            [3, 2, 2],
+        ],
+        'available' => [3, 3, 2],
+    ]);
+
+    $response->assertStatus(200);
+
+    $response->assertJson([
+        'need' => [
+            [7, 4, 3],
+            [1, 2, 2],
+        ],
+    ]);
+  }
 }
+

@@ -66,11 +66,30 @@ class DeadlockController extends Controller
             }
         }
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Matrices validadas correctamente',
-            'processes' => $processes,
-            'resources' => $resources,
-        ]);
+// Calcular la matriz Necesidad
+// Necesidad = Maximo - Asignacion
+
+$need = [];
+
+for ($i = 0; $i < $processes; $i++) {
+
+    $fila = [];
+
+    for ($j = 0; $j < $resources; $j++) {
+
+        $necesidad = $maximum[$i][$j] - $allocation[$i][$j];
+
+        $fila[] = $necesidad;
+    }
+
+    $need[] = $fila;
+}
+ return response()->json([
+    'success' => true,
+    'message' => 'Matrices validadas correctamente',
+    'processes' => $processes,
+    'resources' => $resources,
+    'need' => $need,
+]);
     }
 }

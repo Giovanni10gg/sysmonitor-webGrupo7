@@ -137,13 +137,15 @@
     </form>
 
     <div id="resultado" role="status" aria-live="polite"></div>
-
+    <div id="matriz-necesidad"></div>
 </main>
 
 <script>
     const formulario = document.getElementById('formulario');
     const contenedor = document.getElementById('matrices');
     const resultado = document.getElementById('resultado');
+    const contenedorNecesidad =
+    document.getElementById('matriz-necesidad');
 
     function crearTabla(titulo, nombre, procesos, recursos) {
         let html = `<h2>${titulo}</h2>`;
@@ -205,12 +207,64 @@
         resultado.className = '';
     }
 
+function mostrarMatrizNecesidad(need) {
+    contenedorNecesidad.replaceChildren();
+
+    const titulo = document.createElement('h2');
+    titulo.textContent = 'Matriz Necesidad Calculada';
+
+    const contenedorTabla = document.createElement('div');
+    contenedorTabla.className = 'tabla';
+
+    const tabla = document.createElement('table');
+    const encabezado = document.createElement('tr');
+
+    const columnas = [
+        'Proceso',
+        ...need[0].map((_, j) => `R${j}`)
+    ];
+
+    columnas.forEach(nombre => {
+        const th = document.createElement('th');
+        th.textContent = nombre;
+        encabezado.appendChild(th);
+    });
+
+    const thead = document.createElement('thead');
+    thead.appendChild(encabezado);
+    tabla.appendChild(thead);
+
+    const tbody = document.createElement('tbody');
+
+    need.forEach((fila, i) => {
+        const tr = document.createElement('tr');
+
+        const proceso = document.createElement('th');
+        proceso.textContent = `P${i}`;
+        tr.appendChild(proceso);
+
+        fila.forEach(valor => {
+            const td = document.createElement('td');
+            td.textContent = valor;
+            tr.appendChild(td);
+        });
+
+        tbody.appendChild(tr);
+    });
+
+    tabla.appendChild(tbody);
+    contenedorTabla.appendChild(tabla);
+
+    contenedorNecesidad.appendChild(titulo);
+    contenedorNecesidad.appendChild(contenedorTabla);
+}
+
     document.getElementById('generar')
         .addEventListener('click', generarMatrices);
 
     formulario.addEventListener('submit', async function(evento) {
         evento.preventDefault();
-
+contenedorNecesidad.replaceChildren();
         if (!formulario.reportValidity()) return;
 
         const n = Number(document.getElementById('procesos').value);
@@ -278,6 +332,8 @@
                     `Matrices validadas correctamente. ` +
                     `Procesos: ${datos.processes}. ` +
                     `Recursos: ${datos.resources}.`;
+                   mostrarMatrizNecesidad(datos.need);
+
             } else {
                 resultado.className = 'error';
 
@@ -292,6 +348,7 @@
             resultado.className = 'error';
             resultado.textContent =
                 'No fue posible comunicarse con Laravel.';
+            contenedorNecesidad.replaceChildren();
         }
     });
 
