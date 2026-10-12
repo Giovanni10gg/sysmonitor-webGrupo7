@@ -143,6 +143,19 @@
     padding: 12px;
     border-radius: 6px;
 }
+#seccion-recuperacion {
+    margin-top: 25px;
+    padding-top: 20px;
+    border-top: 1px solid #d5dbe3;
+}
+
+#resultado-recuperacion {
+    line-height: 1.6;
+}
+
+#resultado-recuperacion li {
+    margin-bottom: 10px;
+}
     </style>
 </head>
 
@@ -270,6 +283,28 @@
 
 </section>
 
+
+<section id="seccion-recuperacion" hidden>
+
+    <h2>Recuperación ante interbloqueos</h2>
+
+    <p>
+        Análisis de posibles acciones para liberar recursos
+        y permitir que los procesos continúen.
+    </p>
+
+    <p>
+        Esta recuperación es una simulación académica.
+        No termina procesos reales del sistema operativo.
+    </p>
+
+    <div id="resultado-recuperacion"
+         role="status"
+         aria-live="polite"></div>
+
+</section>
+
+
 </main>
 
 <script>
@@ -293,6 +328,11 @@ const matrizSolicitudesCiclos =
 
 const resultadoCiclos =
     document.getElementById('resultado-ciclos');
+const seccionRecuperacion =
+    document.getElementById('seccion-recuperacion');
+
+const resultadoRecuperacion =
+    document.getElementById('resultado-recuperacion');
 const contenedorGrafo =
     document.getElementById('contenedor-grafo');
 
@@ -903,7 +943,161 @@ function prepararFormularioSolicitud(procesos, recursos) {
 }
 
 
+function limpiarRecuperacion() {
+
+    seccionRecuperacion.hidden = true;
+    resultadoRecuperacion.replaceChildren();
+}
+
+function mostrarRecuperacion(recuperacion) {
+
+    limpiarRecuperacion();
+
+    if (!recuperacion) {
+        return;
+    }
+
+    seccionRecuperacion.hidden = false;
+
+    const mensaje = document.createElement('p');
+
+    // Caso 1: No es necesario recuperar
+    if (!recuperacion.recovery_needed) {
+
+        mensaje.className = 'ok';
+        mensaje.textContent =
+            'No se requiere recuperación mediante terminación ' +
+            'de procesos en este escenario.';
+
+        resultadoRecuperacion.appendChild(mensaje);
+        return;
+    }
+
+    // Mostrar procesos pendientes
+    const pendientes = document.createElement('p');
+
+    pendientes.textContent =
+        'Procesos pendientes antes de recuperar: ' +
+        recuperacion.pending_before.join(', ');
+
+    resultadoRecuperacion.appendChild(pendientes);
+
+    // Caso 2: No existe una terminacion individual suficiente
+    if (!recuperacion.recommended) {
+
+        mensaje.className = 'error';
+
+        mensaje.textContent =
+            'No se encontró una terminación individual que ' +
+            'permita finalizar a todos los demás procesos. ' +
+            'Podrían requerirse varias acciones de recuperación.';
+
+        resultadoRecuperacion.appendChild(mensaje);
+
+        return;
+    }
+
+    // Caso 3: Existe una recomendacion
+    const recomendacion = recuperacion.recommended;
+
+    const titulo = document.createElement('h3');
+
+    titulo.textContent =
+        'Recomendación: terminar ' +
+        recomendacion.process +
+        ' (simulado)';
+
+    resultadoRecuperacion.appendChild(titulo);
+
+    const recursos = document.createElement('p');
+
+    recursos.textContent =
+        'Recursos liberados inicialmente: [' +
+        recomendacion.released.join(', ') +
+        ']';
+
+    resultadoRecuperacion.appendChild(recursos);
+
+    // Mostrar los pasos de recuperacion
+    const tituloPasos = document.createElement('h3');
+    tituloPasos.textContent = 'Recuperación paso a paso';
+
+    resultadoRecuperacion.appendChild(tituloPasos);
+
+    const lista = document.createElement('ol');
+
+    recomendacion.steps.forEach(paso => {
+
+        const elemento = document.createElement('li');
+
+        if (paso.action === 'abort') {
+
+            elemento.textContent =
+                'Terminar ' + paso.process +
+                ' de forma simulada. Libera [' +
+                paso.released.join(', ') +
+                ']. Disponible: [' +
+                paso.available_after.join(', ') + '].';
+
+        } else if (paso.action === 'finish') {
+
+            elemento.textContent =
+                paso.process +
+                ' puede continuar y finalizar. Libera [' +
+                paso.released.join(', ') +
+                ']. Disponible: [' +
+                paso.available_after.join(', ') + '].';
+        }
+
+        lista.appendChild(elemento);
+    });
+
+    resultadoRecuperacion.appendChild(lista);
+
+    // Comprobar el resultado final
+    const resultadoFinal = document.createElement('p');
+
+    if (recomendacion.resolved) {
+
+        resultadoFinal.className = 'ok';
+
+        resultadoFinal.textContent =
+            'Recuperación simulada exitosa. ' +
+            'No quedan procesos pendientes. ' +
+            'Recursos disponibles al finalizar: [' +
+            recomendacion.available_after.join(', ') + '].';
+
+    } else {
+
+        resultadoFinal.className = 'error';
+
+        resultadoFinal.textContent =
+            'Todavía quedan procesos pendientes: ' +
+            recomendacion.pending_after.join(', ');
+    }
+
+    resultadoRecuperacion.appendChild(resultadoFinal);
+
+    // Mostrar otras alternativas evaluadas
+    if (recuperacion.options.length > 1) {
+
+        const alternativas = document.createElement('p');
+
+        alternativas.textContent =
+            'Alternativas de terminación individual evaluadas: ' +
+            recuperacion.options.map(opcion =>
+                opcion.process +
+                (opcion.resolved
+                    ? ' (resuelve)'
+                    : ' (insuficiente)')
+            ).join(', ');
+
+        resultadoRecuperacion.appendChild(alternativas);
+    }
+}
+
 function limpiarCiclos() {
+limpiarRecuperacion();
 
     seccionCiclos.hidden = true;
 
@@ -1079,6 +1273,7 @@ prepararFormularioCiclos(datos.processes, datos.resources);
 formularioSolicitud.addEventListener('submit', async function(evento) {
 
     evento.preventDefault();
+limpiarRecuperacion();
 
     if (!matricesValidadas) {
         return;
@@ -1178,6 +1373,7 @@ formularioSolicitud.addEventListener('submit', async function(evento) {
 formularioCiclos.addEventListener('submit', async function(evento) {
 
     evento.preventDefault();
+limpiarRecuperacion();
 
     if (!matricesValidadas) {
         return;
@@ -1265,7 +1461,7 @@ formularioCiclos.addEventListener('submit', async function(evento) {
 
             // Mostrar el grafo con todas las solicitudes
 mostrarGrafo(datos.graph, true, datos.cycle);
-
+mostrarRecuperacion(datos.recovery);
         } else {
 
             resultadoCiclos.className = 'error';

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\RecoveryService;
 use App\Services\CycleDetectionService;
 use App\Services\BankerService;
 use App\Services\ResourceGraphService;
@@ -227,11 +228,13 @@ $graph = $graphService->build(
     }
 
     // Analizar ciclos con solicitudes simultaneas
-    public function analyzeCycles(
-        Request $request,
-        ResourceGraphService $graphService,
-        CycleDetectionService $cycleService
-    ) {
+public function analyzeCycles(
+    Request $request,
+    ResourceGraphService $graphService,
+    CycleDetectionService $cycleService,
+    RecoveryService $recoveryService
+)
+ {
         // Validar los datos recibidos
         $data = $request->validate([
             'allocation' => ['required', 'array', 'min:1', 'max:10'],
@@ -319,6 +322,14 @@ $graph = $graphService->build(
         // Buscar un ciclo mediante DFS
         $result = $cycleService->detect($graph);
 
+// Analizar una posible recuperacion simulada
+$recovery = $recoveryService->analyze(
+    $allocation,
+    $available,
+    $requests,
+    $result['cycle']
+);
+
         // Interpretar el resultado
         if ($result['has_cycle']) {
             $message = 'Se detecto un ciclo de dependencias. '
@@ -334,6 +345,7 @@ $graph = $graphService->build(
             'cycle' => $result['cycle'],
             'message' => $message,
             'graph' => $graph,
+            'recovery' => $recovery,
         ]);
     }
 
