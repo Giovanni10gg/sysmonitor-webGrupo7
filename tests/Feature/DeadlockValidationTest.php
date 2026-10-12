@@ -209,4 +209,3 @@ public function test_calcula_matriz_necesidad(): void
         $response->assertJsonValidationErrors(['allocation']);
     }
 }
-
