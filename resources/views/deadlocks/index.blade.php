@@ -131,6 +131,18 @@
     display: block;
     max-width: none;
 }
+
+#seccion-ciclos {
+    margin-top: 25px;
+    padding-top: 20px;
+    border-top: 1px solid #d5dbe3;
+}
+
+#resultado-ciclos:not(:empty) {
+    margin-top: 15px;
+    padding: 12px;
+    border-radius: 6px;
+}
     </style>
 </head>
 
@@ -227,6 +239,37 @@
     </p>
 
 </section>
+
+<section id="seccion-ciclos" hidden>
+
+    <h2>Detección de ciclos</h2>
+
+    <p>
+        Ingrese los recursos que cada proceso tiene
+        pendientes de recibir.
+    </p>
+
+    <p>
+        Las solicitudes no modifican las asignaciones
+        actuales del sistema.
+    </p>
+
+    <form id="formulario-ciclos">
+
+        <div id="matriz-solicitudes-ciclos"></div>
+
+        <button type="submit">
+            Detectar ciclos
+        </button>
+
+    </form>
+
+    <div id="resultado-ciclos"
+         role="status"
+         aria-live="polite"></div>
+
+</section>
+
 </main>
 
 <script>
@@ -239,7 +282,17 @@
     document.getElementById('resultado-banquero');
 const seccionGrafo =
     document.getElementById('seccion-grafo');
+const seccionCiclos =
+    document.getElementById('seccion-ciclos');
 
+const formularioCiclos =
+    document.getElementById('formulario-ciclos');
+
+const matrizSolicitudesCiclos =
+    document.getElementById('matriz-solicitudes-ciclos');
+
+const resultadoCiclos =
+    document.getElementById('resultado-ciclos');
 const contenedorGrafo =
     document.getElementById('contenedor-grafo');
 
@@ -291,6 +344,7 @@ let matricesValidadas = null;
     }
 
     function generarMatrices() {
+limpiarCiclos();
 limpiarGrafo();
 limpiarSolicitud();
 contenedorNecesidad.replaceChildren();
@@ -525,7 +579,7 @@ function limpiarGrafo() {
     seccionGrafo.hidden = true;
 }
 
-function mostrarGrafo(grafo, conSolicitud = false) {
+function mostrarGrafo(grafo, conSolicitud = false, ciclo = []) {
 
     limpiarGrafo();
 
@@ -534,6 +588,15 @@ function mostrarGrafo(grafo, conSolicitud = false) {
         return;
     }
 
+// Identificar nodos y conexiones del ciclo
+const nodosDelCiclo = new Set(ciclo);
+const aristasDelCiclo = new Set();
+
+for (let i = 0; i < ciclo.length - 1; i++) {
+    aristasDelCiclo.add(
+        `${ciclo[i]}->${ciclo[i + 1]}`
+    );
+}
     const recursos = grafo.nodes.filter(
         nodo => nodo.type === 'resource'
     );
@@ -600,6 +663,7 @@ function mostrarGrafo(grafo, conSolicitud = false) {
 
     crearMarcador('flecha-m4-asignacion', '#2563eb');
     crearMarcador('flecha-m4-solicitud', '#d97706');
+    crearMarcador('flecha-m4-ciclo', '#dc2626');
 
     svg.appendChild(defs);
 
@@ -632,7 +696,10 @@ function mostrarGrafo(grafo, conSolicitud = false) {
 
         const asignacion = arista.type === 'allocation';
 
-        const desplazamiento = asignacion ? -9 : 9;
+const esAristaDelCiclo = aristasDelCiclo.has(
+    `${arista.from}->${arista.to}`
+);
+       const desplazamiento = asignacion ? -9 : 9;
 
         const x1 = origen.x + desplazamiento;
         const x2 = destino.x + desplazamiento;
@@ -640,19 +707,25 @@ function mostrarGrafo(grafo, conSolicitud = false) {
         const y1 = asignacion ? 108 : 231;
         const y2 = asignacion ? 231 : 108;
 
-        const color = asignacion ? '#2563eb' : '#d97706';
+const color = esAristaDelCiclo
+    ? '#dc2626'
+    : (asignacion ? '#2563eb' : '#d97706');
 
-        const linea = crearElemento('line', {
-            x1: x1,
-            y1: y1,
-            x2: x2,
-            y2: y2,
-            stroke: color,
-            'stroke-width': 2.5,
-            'marker-end': asignacion
-                ? 'url(#flecha-m4-asignacion)'
-                : 'url(#flecha-m4-solicitud)'
-        });
+
+const linea = crearElemento('line', {
+    x1: x1,
+    y1: y1,
+    x2: x2,
+    y2: y2,
+    stroke: color,
+    'stroke-width': esAristaDelCiclo ? 4 : 2.5,
+    'marker-end': esAristaDelCiclo
+        ? 'url(#flecha-m4-ciclo)'
+        : (asignacion
+            ? 'url(#flecha-m4-asignacion)'
+            : 'url(#flecha-m4-solicitud)')
+});
+
 
         if (!asignacion) {
             linea.setAttribute('stroke-dasharray', '7 5');
@@ -689,13 +762,14 @@ function mostrarGrafo(grafo, conSolicitud = false) {
             height: 50,
             rx: 7,
             fill: '#dbeafe',
-            stroke: '#2563eb',
-            'stroke-width': 2
+stroke: nodosDelCiclo.has(nodo.id)
+    ? '#dc2626' : '#2563eb',
+'stroke-width': nodosDelCiclo.has(nodo.id) ? 4 : 2
         });
 
         svg.appendChild(rectangulo);
 
-        const nombre = crearElemento('text', {
+       const nombre = crearElemento('text', {
             x: punto.x,
             y: punto.y - 4,
             'text-anchor': 'middle',
@@ -731,8 +805,10 @@ function mostrarGrafo(grafo, conSolicitud = false) {
             cy: punto.y,
             r: 27,
             fill: '#dcfce7',
-            stroke: '#16a34a',
-            'stroke-width': 2
+            stroke: nodosDelCiclo.has(nodo.id)
+    ? '#dc2626' : '#16a34a',
+'stroke-width': nodosDelCiclo.has(nodo.id) ? 4 : 2
+
         });
 
         svg.appendChild(circulo);
@@ -752,9 +828,25 @@ function mostrarGrafo(grafo, conSolicitud = false) {
 
     contenedorGrafo.appendChild(svg);
 
-    descripcionGrafo.textContent = conSolicitud
-        ? 'Grafo del estado original con la solicitud evaluada. La flecha de solicitud no indica que la asignación ya se haya realizado.'
-        : 'Grafo del estado actual de las matrices validadas.';
+if (ciclo.length > 0) {
+
+    descripcionGrafo.textContent =
+        'Se detectó un ciclo. Las conexiones y los nodos ' +
+        'resaltados en rojo forman parte del ciclo encontrado.';
+
+} else if (conSolicitud) {
+
+    descripcionGrafo.textContent =
+        'Grafo con solicitudes simuladas. Las flechas de solicitud ' +
+        'no representan recursos que ya fueron concedidos.';
+
+} else {
+
+    descripcionGrafo.textContent =
+        'Grafo del estado actual de las matrices validadas.';
+}
+
+
 
     seccionGrafo.hidden = false;
 }
@@ -810,10 +902,67 @@ function prepararFormularioSolicitud(procesos, recursos) {
     seccionSolicitud.hidden = false;
 }
 
+
+function limpiarCiclos() {
+
+    seccionCiclos.hidden = true;
+
+    matrizSolicitudesCiclos.replaceChildren();
+
+    resultadoCiclos.textContent = '';
+    resultadoCiclos.className = '';
+}
+
+function prepararFormularioCiclos(procesos, recursos) {
+
+    let html = '<div class="tabla">';
+    html += '<table><thead><tr><th>Proceso</th>';
+
+    // Encabezados R0, R1, R2...
+    for (let j = 0; j < recursos; j++) {
+        html += `<th>R${j}</th>`;
+    }
+
+    html += '</tr></thead><tbody>';
+
+    // Crear una fila por proceso
+    for (let i = 0; i < procesos; i++) {
+
+        html += `<tr><th>P${i}</th>`;
+
+        for (let j = 0; j < recursos; j++) {
+
+            html += `<td>
+                <input
+                    type="number"
+                    name="cycle_request[${i}][${j}]"
+                    min="0"
+                    step="1"
+                    value="0"
+                    required
+                >
+            </td>`;
+        }
+
+        html += '</tr>';
+    }
+
+    html += '</tbody></table></div>';
+
+    matrizSolicitudesCiclos.innerHTML = html;
+
+    resultadoCiclos.textContent = '';
+    resultadoCiclos.className = '';
+
+    seccionCiclos.hidden = false;
+}
+
     document.getElementById('generar')
         .addEventListener('click', generarMatrices);
 formulario.addEventListener('input', function() {
-limpiarGrafo();
+
+    limpiarCiclos();
+    limpiarGrafo();
     limpiarSolicitud();
 
     contenedorNecesidad.replaceChildren();
@@ -825,6 +974,7 @@ limpiarGrafo();
 
     formulario.addEventListener('submit', async function(evento) {
         evento.preventDefault();
+limpiarCiclos();
 limpiarGrafo();
 limpiarSolicitud();
         contenedorBanquero.replaceChildren();
@@ -906,6 +1056,7 @@ matricesValidadas = {
 };
 
 prepararFormularioSolicitud(datos.processes, datos.resources);
+prepararFormularioCiclos(datos.processes, datos.resources);
             }
 	     else {
                 resultado.className = 'error';
@@ -1015,6 +1166,120 @@ formularioSolicitud.addEventListener('submit', async function(evento) {
         resultadoSolicitud.className = 'error';
 
         resultadoSolicitud.textContent =
+            'No fue posible comunicarse con Laravel.';
+
+    } finally {
+
+        boton.disabled = false;
+    }
+});
+
+
+formularioCiclos.addEventListener('submit', async function(evento) {
+
+    evento.preventDefault();
+
+    if (!matricesValidadas) {
+        return;
+    }
+
+    if (!formularioCiclos.reportValidity()) {
+        return;
+    }
+
+    const { allocation, maximum, available } = matricesValidadas;
+
+    const processes = allocation.length;
+    const resources = available.length;
+
+    // Construir la matriz de solicitudes pendientes
+    const requests = [];
+
+    for (let i = 0; i < processes; i++) {
+
+        const fila = [];
+
+        for (let j = 0; j < resources; j++) {
+
+            const entrada = formularioCiclos.elements.namedItem(
+                `cycle_request[${i}][${j}]`
+            );
+
+            fila.push(Number(entrada.value));
+        }
+
+        requests.push(fila);
+    }
+
+    const boton = formularioCiclos.querySelector(
+        'button[type="submit"]'
+    );
+
+    boton.disabled = true;
+
+    resultadoCiclos.className = '';
+    resultadoCiclos.textContent = 'Analizando el grafo...';
+
+    try {
+
+        const respuesta = await fetch(
+            "{{ route('deadlocks.cycles') }}",
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector(
+                        'meta[name="csrf-token"]'
+                    ).content
+                },
+                body: JSON.stringify({
+                    allocation,
+                    maximum,
+                    available,
+                    requests
+                })
+            }
+        );
+
+        const datos = await respuesta.json();
+
+        if (respuesta.ok) {
+
+            if (datos.has_cycle) {
+
+                resultadoCiclos.className = 'error';
+
+                resultadoCiclos.textContent =
+                    datos.message +
+                    ' Ciclo encontrado: ' +
+                    datos.cycle.join(' → ');
+
+            } else {
+
+                resultadoCiclos.className = 'ok';
+
+                resultadoCiclos.textContent =
+                    datos.message;
+            }
+
+            // Mostrar el grafo con todas las solicitudes
+mostrarGrafo(datos.graph, true, datos.cycle);
+
+        } else {
+
+            resultadoCiclos.className = 'error';
+
+            resultadoCiclos.textContent = datos.errors
+                ? Object.values(datos.errors).flat().join(' | ')
+                : datos.message || 'Error al analizar ciclos.';
+        }
+
+    } catch (error) {
+
+        resultadoCiclos.className = 'error';
+
+        resultadoCiclos.textContent =
             'No fue posible comunicarse con Laravel.';
 
     } finally {

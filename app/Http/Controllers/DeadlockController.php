@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\CycleDetectionService;
 use App\Services\BankerService;
 use App\Services\ResourceGraphService;
 use Illuminate\Http\Request;
@@ -222,6 +223,117 @@ $graph = $graphService->build(
             'sequence' => $result['sequence'],
             'available_after' => $result['available_after'],
 	    'graph' => $graph,
+        ]);
+    }
+
+    // Analizar ciclos con solicitudes simultaneas
+    public function analyzeCycles(
+        Request $request,
+        ResourceGraphService $graphService,
+        CycleDetectionService $cycleService
+    ) {
+        // Validar los datos recibidos
+        $data = $request->validate([
+            'allocation' => ['required', 'array', 'min:1', 'max:10'],
+            'allocation.*' => ['required', 'array', 'min:1', 'max:6'],
+            'allocation.*.*' => ['required', 'integer', 'min:0'],
+
+            'maximum' => ['required', 'array', 'min:1', 'max:10'],
+            'maximum.*' => ['required', 'array', 'min:1', 'max:6'],
+            'maximum.*.*' => ['required', 'integer', 'min:0'],
+
+            'available' => ['required', 'array', 'min:1', 'max:6'],
+            'available.*' => ['required', 'integer', 'min:0'],
+
+            'requests' => ['required', 'array', 'min:1', 'max:10'],
+            'requests.*' => ['required', 'array', 'min:1', 'max:6'],
+            'requests.*.*' => ['required', 'integer', 'min:0'],
+        ]);
+
+        $allocation = $data['allocation'];
+        $maximum = $data['maximum'];
+        $available = $data['available'];
+        $requests = $data['requests'];
+
+        $processes = count($allocation);
+        $resources = count($available);
+
+        // Validar cantidad de procesos y orden de las filas
+        if (
+            !array_is_list($allocation) ||
+            !array_is_list($maximum) ||
+            !array_is_list($available) ||
+            !array_is_list($requests) ||
+            count($maximum) !== $processes ||
+            count($requests) !== $processes
+        ) {
+            throw ValidationException::withMessages([
+                'requests' => 'Las dimensiones de las matrices no coinciden.',
+            ]);
+        }
+
+        // Verificar todas las filas
+        for ($i = 0; $i < $processes; $i++) {
+
+            if (
+                !array_is_list($allocation[$i]) ||
+                !array_is_list($maximum[$i]) ||
+                !array_is_list($requests[$i]) ||
+                count($allocation[$i]) !== $resources ||
+                count($maximum[$i]) !== $resources ||
+                count($requests[$i]) !== $resources
+            ) {
+                throw ValidationException::withMessages([
+                    'requests' => 'Las dimensiones de las filas no coinciden.',
+                ]);
+            }
+
+            for ($j = 0; $j < $resources; $j++) {
+
+                // La asignacion no debe superar el maximo
+                if ($allocation[$i][$j] > $maximum[$i][$j]) {
+                    throw ValidationException::withMessages([
+                        'allocation' => 'La asignacion supera el maximo.',
+                    ]);
+                }
+
+                // Calcular necesidad del proceso
+                $need = $maximum[$i][$j] - $allocation[$i][$j];
+
+                // Cada solicitud debe respetar la necesidad
+                if ($requests[$i][$j] > $need) {
+                    throw ValidationException::withMessages([
+                        'requests' => 'Una solicitud supera la necesidad del proceso.',
+                    ]);
+                }
+            }
+        }
+
+        // Construir el grafo con solicitudes simultaneas
+        $graph = $graphService->buildWithRequests(
+            $allocation,
+            $available,
+            $requests
+        );
+
+        // Buscar un ciclo mediante DFS
+        $result = $cycleService->detect($graph);
+
+        // Interpretar el resultado
+        if ($result['has_cycle']) {
+            $message = 'Se detecto un ciclo de dependencias. '
+                . 'Con recursos de multiples instancias, '
+                . 'un ciclo no confirma por si solo un interbloqueo.';
+        } else {
+            $message = 'No se detectaron ciclos en el grafo.';
+        }
+
+        return response()->json([
+            'success' => true,
+            'has_cycle' => $result['has_cycle'],
+            'cycle' => $result['cycle'],
+            'message' => $message,
+            'graph' => $graph,
         ]);
     }
 

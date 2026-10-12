@@ -83,4 +83,41 @@ class ResourceGraphService
             'edges' => $edges,
         ];
     }
+
+    // Construir un grafo con solicitudes de varios procesos
+    public function buildWithRequests(
+        array $allocation,
+        array $available,
+        array $requests
+    ): array {
+
+        // Crear el grafo con las asignaciones actuales
+        $graph = $this->build($allocation, $available);
+
+        $processes = count($allocation);
+        $resources = count($available);
+
+        // Recorrer las solicitudes de cada proceso
+        for ($i = 0; $i < $processes; $i++) {
+
+            for ($j = 0; $j < $resources; $j++) {
+
+                $amount = $requests[$i][$j];
+
+                if ($amount > 0) {
+
+                    // Flecha: Proceso -> Recurso
+                    $graph['edges'][] = [
+                        'from' => "P{$i}",
+                        'to' => "R{$j}",
+                        'type' => 'request',
+                        'amount' => $amount,
+                    ];
+                }
+            }
+        }
+
+        return $graph;
+    }
+
 }
