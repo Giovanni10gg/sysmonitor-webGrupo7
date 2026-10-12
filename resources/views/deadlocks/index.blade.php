@@ -112,6 +112,25 @@
     padding: 12px;
     border-radius: 6px;
 }
+
+#seccion-grafo {
+    margin-top: 25px;
+    padding-top: 20px;
+    border-top: 1px solid #d5dbe3;
+}
+
+.grafo-scroll {
+    overflow-x: auto;
+    padding: 10px;
+    background: #f8fafc;
+    border: 1px solid #d5dbe3;
+    border-radius: 8px;
+}
+
+.grafo-scroll svg {
+    display: block;
+    max-width: none;
+}
     </style>
 </head>
 
@@ -193,7 +212,21 @@
     </p>
 
 </section>
+<section id="seccion-grafo" hidden>
 
+    <h2>Grafo de asignación de recursos</h2>
+
+    <p id="descripcion-grafo"></p>
+
+    <div id="contenedor-grafo" class="grafo-scroll"></div>
+
+    <p>
+        Flechas azules: recurso asignado a un proceso.
+        Flechas naranjas discontinuas: recurso solicitado.
+        Los números indican las cantidades.
+    </p>
+
+</section>
 </main>
 
 <script>
@@ -204,6 +237,14 @@
     document.getElementById('matriz-necesidad');
     const contenedorBanquero =
     document.getElementById('resultado-banquero');
+const seccionGrafo =
+    document.getElementById('seccion-grafo');
+
+const contenedorGrafo =
+    document.getElementById('contenedor-grafo');
+
+const descripcionGrafo =
+    document.getElementById('descripcion-grafo');
 const seccionSolicitud =
     document.getElementById('seccion-solicitud');
 
@@ -250,6 +291,7 @@ let matricesValidadas = null;
     }
 
     function generarMatrices() {
+limpiarGrafo();
 limpiarSolicitud();
 contenedorNecesidad.replaceChildren();
 contenedorBanquero.replaceChildren();
@@ -477,6 +519,246 @@ function mostrarResultadoBanquero(datos) {
     }
 }
 
+function limpiarGrafo() {
+    contenedorGrafo.replaceChildren();
+    descripcionGrafo.textContent = '';
+    seccionGrafo.hidden = true;
+}
+
+function mostrarGrafo(grafo, conSolicitud = false) {
+
+    limpiarGrafo();
+
+    if (!grafo || !Array.isArray(grafo.nodes) ||
+        !Array.isArray(grafo.edges)) {
+        return;
+    }
+
+    const recursos = grafo.nodes.filter(
+        nodo => nodo.type === 'resource'
+    );
+
+    const procesos = grafo.nodes.filter(
+        nodo => nodo.type === 'process'
+    );
+
+    const ancho = Math.max(
+        760,
+        (Math.max(recursos.length, procesos.length) + 1) * 135
+    );
+
+    const alto = 330;
+    const ns = 'http://www.w3.org/2000/svg';
+
+    // Crear elementos SVG
+    function crearElemento(nombre, atributos = {}) {
+
+        const elemento = document.createElementNS(ns, nombre);
+
+        Object.entries(atributos).forEach(([clave, valor]) => {
+            elemento.setAttribute(clave, valor);
+        });
+
+        return elemento;
+    }
+
+    const svg = crearElemento('svg', {
+        width: ancho,
+        height: alto,
+        viewBox: `0 0 ${ancho} ${alto}`,
+        role: 'img',
+        'aria-label': 'Grafo de procesos y recursos'
+    });
+
+    const titulo = crearElemento('title');
+    titulo.textContent = 'Grafo de asignación de recursos';
+    svg.appendChild(titulo);
+
+    // Crear las puntas de las flechas
+    const defs = crearElemento('defs');
+
+    function crearMarcador(id, color) {
+
+        const marcador = crearElemento('marker', {
+            id: id,
+            viewBox: '0 0 10 10',
+            refX: 9,
+            refY: 5,
+            markerWidth: 7,
+            markerHeight: 7,
+            orient: 'auto'
+        });
+
+        const punta = crearElemento('path', {
+            d: 'M 0 0 L 10 5 L 0 10 Z',
+            fill: color
+        });
+
+        marcador.appendChild(punta);
+        defs.appendChild(marcador);
+    }
+
+    crearMarcador('flecha-m4-asignacion', '#2563eb');
+    crearMarcador('flecha-m4-solicitud', '#d97706');
+
+    svg.appendChild(defs);
+
+    // Calcular posiciones
+    const posiciones = {};
+
+    recursos.forEach((nodo, indice) => {
+        posiciones[nodo.id] = {
+            x: (indice + 1) * ancho / (recursos.length + 1),
+            y: 80
+        };
+    });
+
+    procesos.forEach((nodo, indice) => {
+        posiciones[nodo.id] = {
+            x: (indice + 1) * ancho / (procesos.length + 1),
+            y: 260
+        };
+    });
+
+    // Dibujar flechas antes de los nodos
+    grafo.edges.forEach(arista => {
+
+        const origen = posiciones[arista.from];
+        const destino = posiciones[arista.to];
+
+        if (!origen || !destino) {
+            return;
+        }
+
+        const asignacion = arista.type === 'allocation';
+
+        const desplazamiento = asignacion ? -9 : 9;
+
+        const x1 = origen.x + desplazamiento;
+        const x2 = destino.x + desplazamiento;
+
+        const y1 = asignacion ? 108 : 231;
+        const y2 = asignacion ? 231 : 108;
+
+        const color = asignacion ? '#2563eb' : '#d97706';
+
+        const linea = crearElemento('line', {
+            x1: x1,
+            y1: y1,
+            x2: x2,
+            y2: y2,
+            stroke: color,
+            'stroke-width': 2.5,
+            'marker-end': asignacion
+                ? 'url(#flecha-m4-asignacion)'
+                : 'url(#flecha-m4-solicitud)'
+        });
+
+        if (!asignacion) {
+            linea.setAttribute('stroke-dasharray', '7 5');
+        }
+
+        svg.appendChild(linea);
+
+        // Mostrar la cantidad de recursos
+        const cantidad = crearElemento('text', {
+            x: (x1 + x2) / 2,
+            y: (y1 + y2) / 2 + (asignacion ? -10 : 16),
+            'text-anchor': 'middle',
+            'font-size': 14,
+            'font-weight': 'bold',
+            fill: color,
+            stroke: '#f8fafc',
+            'stroke-width': 4,
+            'paint-order': 'stroke'
+        });
+
+        cantidad.textContent = arista.amount;
+        svg.appendChild(cantidad);
+    });
+
+    // Dibujar los recursos como rectangulos
+    recursos.forEach(nodo => {
+
+        const punto = posiciones[nodo.id];
+
+        const rectangulo = crearElemento('rect', {
+            x: punto.x - 60,
+            y: punto.y - 25,
+            width: 120,
+            height: 50,
+            rx: 7,
+            fill: '#dbeafe',
+            stroke: '#2563eb',
+            'stroke-width': 2
+        });
+
+        svg.appendChild(rectangulo);
+
+        const nombre = crearElemento('text', {
+            x: punto.x,
+            y: punto.y - 4,
+            'text-anchor': 'middle',
+            'font-size': 16,
+            'font-weight': 'bold',
+            fill: '#1e40af'
+        });
+
+        nombre.textContent = nodo.label;
+        svg.appendChild(nombre);
+
+        const informacion = crearElemento('text', {
+            x: punto.x,
+            y: punto.y + 14,
+            'text-anchor': 'middle',
+            'font-size': 11,
+            fill: '#1e40af'
+        });
+
+        informacion.textContent =
+            `${nodo.available} libres / ${nodo.total} total`;
+
+        svg.appendChild(informacion);
+    });
+
+    // Dibujar los procesos como circulos
+    procesos.forEach(nodo => {
+
+        const punto = posiciones[nodo.id];
+
+        const circulo = crearElemento('circle', {
+            cx: punto.x,
+            cy: punto.y,
+            r: 27,
+            fill: '#dcfce7',
+            stroke: '#16a34a',
+            'stroke-width': 2
+        });
+
+        svg.appendChild(circulo);
+
+        const nombre = crearElemento('text', {
+            x: punto.x,
+            y: punto.y + 5,
+            'text-anchor': 'middle',
+            'font-size': 16,
+            'font-weight': 'bold',
+            fill: '#166534'
+        });
+
+        nombre.textContent = nodo.label;
+        svg.appendChild(nombre);
+    });
+
+    contenedorGrafo.appendChild(svg);
+
+    descripcionGrafo.textContent = conSolicitud
+        ? 'Grafo del estado original con la solicitud evaluada. La flecha de solicitud no indica que la asignación ya se haya realizado.'
+        : 'Grafo del estado actual de las matrices validadas.';
+
+    seccionGrafo.hidden = false;
+}
+
 
 function limpiarSolicitud() {
 
@@ -531,7 +813,7 @@ function prepararFormularioSolicitud(procesos, recursos) {
     document.getElementById('generar')
         .addEventListener('click', generarMatrices);
 formulario.addEventListener('input', function() {
-
+limpiarGrafo();
     limpiarSolicitud();
 
     contenedorNecesidad.replaceChildren();
@@ -543,6 +825,7 @@ formulario.addEventListener('input', function() {
 
     formulario.addEventListener('submit', async function(evento) {
         evento.preventDefault();
+limpiarGrafo();
 limpiarSolicitud();
         contenedorBanquero.replaceChildren();
 contenedorNecesidad.replaceChildren();
@@ -615,6 +898,7 @@ contenedorNecesidad.replaceChildren();
                     `Recursos: ${datos.resources}.`;
                    mostrarMatrizNecesidad(datos.need);
                    mostrarResultadoBanquero(datos);
+	           mostrarGrafo(datos.graph);
 matricesValidadas = {
     allocation,
     maximum,
@@ -703,7 +987,7 @@ formularioSolicitud.addEventListener('submit', async function(evento) {
 
             resultadoSolicitud.className =
                 datos.granted ? 'ok' : 'error';
-
+	        mostrarGrafo(datos.graph, true);
             resultadoSolicitud.textContent = datos.reason;
 
             if (datos.granted) {

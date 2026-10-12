@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\BankerService;
+use App\Services\ResourceGraphService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 
@@ -17,7 +18,8 @@ class DeadlockController extends Controller
     // Recibir y validar las matrices
 public function validateMatrices(
     Request $request,
-    BankerService $banker
+    BankerService $banker,
+    ResourceGraphService $graphService
 )
     {
         $data = $request->validate([
@@ -94,6 +96,11 @@ $safety = $banker->checkSafety(
     $need,
     $available
 );
+// Construir el grafo de asignacion
+$graph = $graphService->build(
+    $allocation,
+    $available
+);
  return response()->json([
     'success' => true,
     'message' => 'Matrices validadas correctamente',
@@ -105,14 +112,17 @@ $safety = $banker->checkSafety(
 'steps' => $safety['steps'],
 'pending' => $safety['pending'],
 'work_final' => $safety['work_final'],
+'graph' => $graph,
 ]);
     }
 
     // Evaluar una solicitud de recursos
     public function requestResources(
-        Request $request,
-        BankerService $banker
-    ) {
+    Request $request,
+    BankerService $banker,
+    ResourceGraphService $graphService
+)
+ {
         // Validar los datos recibidos
         $data = $request->validate([
             'allocation' => ['required', 'array', 'min:1'],
@@ -196,6 +206,13 @@ $safety = $banker->checkSafety(
             $process,
             $requested
         );
+// Construir el grafo incluyendo la solicitud
+$graph = $graphService->build(
+    $allocation,
+    $available,
+    $process,
+    $requested
+);
 
         // Enviar el resultado al navegador
         return response()->json([
@@ -204,6 +221,7 @@ $safety = $banker->checkSafety(
             'reason' => $result['reason'],
             'sequence' => $result['sequence'],
             'available_after' => $result['available_after'],
+	    'graph' => $graph,
         ]);
     }
 
