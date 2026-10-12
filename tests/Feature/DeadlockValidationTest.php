@@ -183,5 +183,30 @@ public function test_calcula_matriz_necesidad(): void
         $response->assertJsonPath('steps.0.work_after', [1, 0]);
     }
 
+    // Rechazar mas de diez procesos
+    public function test_rechaza_mas_de_diez_procesos(): void
+    {
+        $response = $this->postJson('/deadlocks/validate', [
+            'allocation' => array_fill(0, 11, [0]),
+            'maximum' => array_fill(0, 11, [1]),
+            'available' => [1],
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['allocation']);
+    }
+
+    // Rechazar indices exteriores incorrectos
+    public function test_rechaza_indices_no_consecutivos(): void
+    {
+        $response = $this->postJson('/deadlocks/validate', [
+            'allocation' => [1 => [0]],
+            'maximum' => [[1]],
+            'available' => [1],
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['allocation']);
+    }
 }
 

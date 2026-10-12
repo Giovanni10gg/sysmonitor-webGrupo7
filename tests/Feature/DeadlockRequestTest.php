@@ -53,4 +53,20 @@ class DeadlockRequestTest extends TestCase
         $response->assertStatus(422);
         $response->assertJsonValidationErrors(['request']);
     }
+
+    // Rechazar mas de seis tipos de recursos
+    public function test_rechaza_mas_de_seis_recursos(): void
+    {
+        $response = $this->postJson('/deadlocks/request', [
+            'allocation' => [array_fill(0, 7, 0)],
+            'maximum' => [array_fill(0, 7, 1)],
+            'available' => array_fill(0, 7, 1),
+            'process' => 0,
+            'requested' => array_fill(0, 7, 0),
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['available']);
+    }
+
 }

@@ -24,18 +24,20 @@ public function validateMatrices(
     ResourceGraphService $graphService
 )
     {
+
         $data = $request->validate([
-            'allocation' => ['required', 'array', 'min:1'],
-            'allocation.*' => ['required', 'array', 'min:1'],
+            'allocation' => ['required', 'array', 'min:1', 'max:10'],
+            'allocation.*' => ['required', 'array', 'min:1', 'max:6'],
             'allocation.*.*' => ['required', 'integer', 'min:0'],
 
-            'maximum' => ['required', 'array', 'min:1'],
-            'maximum.*' => ['required', 'array', 'min:1'],
+            'maximum' => ['required', 'array', 'min:1', 'max:10'],
+            'maximum.*' => ['required', 'array', 'min:1', 'max:6'],
             'maximum.*.*' => ['required', 'integer', 'min:0'],
 
-            'available' => ['required', 'array', 'min:1'],
+            'available' => ['required', 'array', 'min:1', 'max:6'],
             'available.*' => ['required', 'integer', 'min:0'],
         ]);
+
 
         $allocation = $data['allocation'];
         $maximum = $data['maximum'];
@@ -43,6 +45,17 @@ public function validateMatrices(
 
         $processes = count($allocation);
         $resources = count($available);
+
+        // Verificar indices consecutivos
+        if (
+            !array_is_list($allocation) ||
+            !array_is_list($maximum) ||
+            !array_is_list($available)
+        ) {
+            throw ValidationException::withMessages([
+                'allocation' => 'Las matrices deben tener indices consecutivos.',
+            ]);
+        }
 
         if ($processes !== count($maximum)) {
             throw ValidationException::withMessages([
@@ -126,23 +139,25 @@ $graph = $graphService->build(
 )
  {
         // Validar los datos recibidos
+
         $data = $request->validate([
-            'allocation' => ['required', 'array', 'min:1'],
-            'allocation.*' => ['required', 'array', 'min:1'],
+            'allocation' => ['required', 'array', 'min:1', 'max:10'],
+            'allocation.*' => ['required', 'array', 'min:1', 'max:6'],
             'allocation.*.*' => ['required', 'integer', 'min:0'],
 
-            'maximum' => ['required', 'array', 'min:1'],
-            'maximum.*' => ['required', 'array', 'min:1'],
+            'maximum' => ['required', 'array', 'min:1', 'max:10'],
+            'maximum.*' => ['required', 'array', 'min:1', 'max:6'],
             'maximum.*.*' => ['required', 'integer', 'min:0'],
 
-            'available' => ['required', 'array', 'min:1'],
+            'available' => ['required', 'array', 'min:1', 'max:6'],
             'available.*' => ['required', 'integer', 'min:0'],
 
             'process' => ['required', 'integer', 'min:0'],
 
-            'requested' => ['required', 'array', 'min:1'],
+            'requested' => ['required', 'array', 'min:1', 'max:6'],
             'requested.*' => ['required', 'integer', 'min:0'],
         ]);
+
 
         $allocation = $data['allocation'];
         $maximum = $data['maximum'];
