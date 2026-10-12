@@ -87,6 +87,7 @@ class BankerService
             }
         }
 
+        // Devolver el resultado del algoritmo del banquero
         return [
             'safe' => count($pending) === 0,
             'sequence' => $sequence,
@@ -95,5 +96,94 @@ class BankerService
             'work_final' => $work,
         ];
     }
-}
+
+
+    // Evaluar una solicitud de recursos
+    public function evaluateRequest(
+        array $allocation,
+        array $need,
+        array $available,
+        int $process,
+        array $requested
+    ): array {
+
+        $resources = count($available);
+
+        // Respuesta comun para solicitudes no concedidas
+        $deny = fn (string $reason): array => [
+            'granted' => false,
+            'reason' => $reason,
+            'sequence' => [],
+            'available_after' => $available,
+        ];
+
+        // Validar proceso y cantidad de recursos
+        if (
+            !isset($allocation[$process], $need[$process]) ||
+            !array_is_list($requested) ||
+            count($requested) !== $resources
+        ) {
+            return $deny('Solicitud invalida.');
+        }
+
+        for ($j = 0; $j < $resources; $j++) {
+
+            if (!is_int($requested[$j]) || $requested[$j] < 0) {
+                return $deny(
+                    'La solicitud debe contener enteros no negativos.'
+                );
+            }
+
+            // Regla 1: Solicitud <= Necesidad
+            if ($requested[$j] > $need[$process][$j]) {
+                return $deny(
+                    'La solicitud supera la necesidad del proceso.'
+                );
+            }
+
+            // Regla 2: Solicitud <= Disponible
+            if ($requested[$j] > $available[$j]) {
+                return $deny(
+                    'Recursos insuficientes. El proceso debe esperar.'
+                );
+            }
+        }
+
+        // Copias para simular sin alterar los datos originales
+        $trialAllocation = $allocation;
+        $trialNeed = $need;
+        $trialAvailable = $available;
+
+        // Asignacion provisional
+        for ($j = 0; $j < $resources; $j++) {
+
+            $trialAvailable[$j] -= $requested[$j];
+
+            $trialAllocation[$process][$j] += $requested[$j];
+
+            $trialNeed[$process][$j] -= $requested[$j];
+        }
+
+        // Regla 3: Comprobar que el estado siga siendo seguro
+        $safety = $this->checkSafety(
+            $trialAllocation,
+            $trialNeed,
+            $trialAvailable
+        );
+
+        if (!$safety['safe']) {
+            return $deny(
+                'Solicitud no concedida: produciria un estado inseguro.'
+            );
+        }
+
+        return [
+            'granted' => true,
+            'reason' => 'Solicitud concedida. El estado sigue siendo seguro.',
+            'sequence' => $safety['sequence'],
+            'available_after' => $trialAvailable,
+        ];
+    }
+
+  }
 

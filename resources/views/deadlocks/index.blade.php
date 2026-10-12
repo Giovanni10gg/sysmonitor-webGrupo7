@@ -95,6 +95,23 @@
             background: #ffe8e8;
             color: #9d2525;
         }
+#seccion-solicitud {
+    margin-top: 25px;
+    padding-top: 20px;
+    border-top: 1px solid #d5dbe3;
+}
+
+#proceso-solicitud {
+    padding: 8px;
+    border: 1px solid #bbb;
+    border-radius: 5px;
+}
+
+#resultado-solicitud:not(:empty) {
+    margin-top: 15px;
+    padding: 12px;
+    border-radius: 6px;
+}
     </style>
 </head>
 
@@ -139,6 +156,44 @@
     <div id="resultado" role="status" aria-live="polite"></div>
     <div id="matriz-necesidad"></div>
     <div id="resultado-banquero"></div>
+
+<section id="seccion-solicitud" hidden>
+
+    <h2>Evaluar solicitud de recursos</h2>
+
+    <p>
+        Seleccione un proceso e indique los recursos
+        adicionales que desea solicitar.
+    </p>
+
+    <form id="formulario-solicitud">
+
+        <div class="configuracion">
+            <label>
+                Proceso
+                <select id="proceso-solicitud" required></select>
+            </label>
+        </div>
+
+        <div id="recursos-solicitados" class="disponible"></div>
+
+        <button type="submit">
+            Evaluar solicitud
+        </button>
+
+    </form>
+
+    <div id="resultado-solicitud"
+         role="status"
+         aria-live="polite"></div>
+
+    <p>
+        Nota: la asignación de recursos es simulada.
+        No modifica permanentemente las matrices.
+    </p>
+
+</section>
+
 </main>
 
 <script>
@@ -149,6 +204,22 @@
     document.getElementById('matriz-necesidad');
     const contenedorBanquero =
     document.getElementById('resultado-banquero');
+const seccionSolicitud =
+    document.getElementById('seccion-solicitud');
+
+const formularioSolicitud =
+    document.getElementById('formulario-solicitud');
+
+const procesoSolicitud =
+    document.getElementById('proceso-solicitud');
+
+const recursosSolicitados =
+    document.getElementById('recursos-solicitados');
+
+const resultadoSolicitud =
+    document.getElementById('resultado-solicitud');
+
+let matricesValidadas = null;
 
     function crearTabla(titulo, nombre, procesos, recursos) {
         let html = `<h2>${titulo}</h2>`;
@@ -179,6 +250,10 @@
     }
 
     function generarMatrices() {
+limpiarSolicitud();
+contenedorNecesidad.replaceChildren();
+contenedorBanquero.replaceChildren();
+
         const n = Number(document.getElementById('procesos').value);
         const m = Number(document.getElementById('recursos').value);
 
@@ -402,11 +477,73 @@ function mostrarResultadoBanquero(datos) {
     }
 }
 
+
+function limpiarSolicitud() {
+
+    matricesValidadas = null;
+    seccionSolicitud.hidden = true;
+
+    resultadoSolicitud.textContent = '';
+    resultadoSolicitud.className = '';
+}
+
+function prepararFormularioSolicitud(procesos, recursos) {
+
+    procesoSolicitud.replaceChildren();
+    recursosSolicitados.replaceChildren();
+
+    // Crear las opciones P0, P1, P2...
+    for (let i = 0; i < procesos; i++) {
+
+        const opcion = document.createElement('option');
+
+        opcion.value = i;
+        opcion.textContent = `P${i}`;
+
+        procesoSolicitud.appendChild(opcion);
+    }
+
+    // Crear una entrada por cada tipo de recurso
+    for (let j = 0; j < recursos; j++) {
+
+        const etiqueta = document.createElement('label');
+        etiqueta.textContent = `Recurso R${j}`;
+
+        const entrada = document.createElement('input');
+
+        entrada.type = 'number';
+        entrada.name = `requested[${j}]`;
+        entrada.min = '0';
+        entrada.step = '1';
+        entrada.value = '0';
+        entrada.required = true;
+
+        etiqueta.appendChild(entrada);
+        recursosSolicitados.appendChild(etiqueta);
+    }
+
+    resultadoSolicitud.textContent = '';
+    resultadoSolicitud.className = '';
+
+    seccionSolicitud.hidden = false;
+}
+
     document.getElementById('generar')
         .addEventListener('click', generarMatrices);
+formulario.addEventListener('input', function() {
+
+    limpiarSolicitud();
+
+    contenedorNecesidad.replaceChildren();
+    contenedorBanquero.replaceChildren();
+
+    resultado.textContent = '';
+    resultado.className = '';
+});
 
     formulario.addEventListener('submit', async function(evento) {
         evento.preventDefault();
+limpiarSolicitud();
         contenedorBanquero.replaceChildren();
 contenedorNecesidad.replaceChildren();
         if (!formulario.reportValidity()) return;
@@ -478,6 +615,13 @@ contenedorNecesidad.replaceChildren();
                     `Recursos: ${datos.resources}.`;
                    mostrarMatrizNecesidad(datos.need);
                    mostrarResultadoBanquero(datos);
+matricesValidadas = {
+    allocation,
+    maximum,
+    available
+};
+
+prepararFormularioSolicitud(datos.processes, datos.resources);
             }
 	     else {
                 resultado.className = 'error';
@@ -496,6 +640,104 @@ contenedorNecesidad.replaceChildren();
             contenedorNecesidad.replaceChildren();
         }
     });
+
+formularioSolicitud.addEventListener('submit', async function(evento) {
+
+    evento.preventDefault();
+
+    if (!matricesValidadas) {
+        return;
+    }
+
+    if (!formularioSolicitud.reportValidity()) {
+        return;
+    }
+
+    // Obtener proceso seleccionado
+    const process = Number(procesoSolicitud.value);
+
+    // Obtener recursos solicitados
+    const requested = Array.from(
+        recursosSolicitados.querySelectorAll('input'),
+        entrada => Number(entrada.value)
+    );
+
+    // Recuperar matrices validadas
+    const { allocation, maximum, available } = matricesValidadas;
+
+    const boton = formularioSolicitud.querySelector(
+        'button[type="submit"]'
+    );
+
+    boton.disabled = true;
+
+    resultadoSolicitud.className = '';
+    resultadoSolicitud.textContent = 'Evaluando solicitud...';
+
+    try {
+
+        const respuesta = await fetch(
+            "{{ route('deadlocks.request') }}",
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector(
+                        'meta[name="csrf-token"]'
+                    ).content
+                },
+                body: JSON.stringify({
+                    allocation,
+                    maximum,
+                    available,
+                    process,
+                    requested
+                })
+            }
+        );
+
+        const datos = await respuesta.json();
+
+        if (respuesta.ok) {
+
+            resultadoSolicitud.className =
+                datos.granted ? 'ok' : 'error';
+
+            resultadoSolicitud.textContent = datos.reason;
+
+            if (datos.granted) {
+
+                resultadoSolicitud.textContent +=
+                    ' Disponible después de la asignación simulada: [' +
+                    datos.available_after.join(', ') + '].';
+
+                resultadoSolicitud.textContent +=
+                    ' Secuencia segura: ' +
+                    datos.sequence.join(' → ') + '.';
+            }
+
+        } else {
+
+            resultadoSolicitud.className = 'error';
+
+            resultadoSolicitud.textContent = datos.errors
+                ? Object.values(datos.errors).flat().join(' | ')
+                : datos.message || 'No se pudo evaluar la solicitud.';
+        }
+
+    } catch (error) {
+
+        resultadoSolicitud.className = 'error';
+
+        resultadoSolicitud.textContent =
+            'No fue posible comunicarse con Laravel.';
+
+    } finally {
+
+        boton.disabled = false;
+    }
+});
 
     generarMatrices();
     contenedorBanquero.replaceChildren();

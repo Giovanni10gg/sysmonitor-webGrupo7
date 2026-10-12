@@ -24,3 +24,4 @@ Route::get('/deadlocks', [DeadlockController::class, 'index'])
 Route::post('/deadlocks/validate',
     [DeadlockController::class, 'validateMatrices'])
     ->name('deadlocks.validate');
+Route::post('/deadlocks/request', [DeadlockController::class, 'requestResources'])->name('deadlocks.request');

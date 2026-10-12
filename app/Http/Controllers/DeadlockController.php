@@ -107,4 +107,104 @@ $safety = $banker->checkSafety(
 'work_final' => $safety['work_final'],
 ]);
     }
+
+    // Evaluar una solicitud de recursos
+    public function requestResources(
+        Request $request,
+        BankerService $banker
+    ) {
+        // Validar los datos recibidos
+        $data = $request->validate([
+            'allocation' => ['required', 'array', 'min:1'],
+            'allocation.*' => ['required', 'array', 'min:1'],
+            'allocation.*.*' => ['required', 'integer', 'min:0'],
+
+            'maximum' => ['required', 'array', 'min:1'],
+            'maximum.*' => ['required', 'array', 'min:1'],
+            'maximum.*.*' => ['required', 'integer', 'min:0'],
+
+            'available' => ['required', 'array', 'min:1'],
+            'available.*' => ['required', 'integer', 'min:0'],
+
+            'process' => ['required', 'integer', 'min:0'],
+
+            'requested' => ['required', 'array', 'min:1'],
+            'requested.*' => ['required', 'integer', 'min:0'],
+        ]);
+
+        $allocation = $data['allocation'];
+        $maximum = $data['maximum'];
+        $available = $data['available'];
+        $process = $data['process'];
+        $requested = $data['requested'];
+
+        $processes = count($allocation);
+        $resources = count($available);
+
+        // Verificar dimensiones y proceso seleccionado
+        if (
+            !array_is_list($allocation) ||
+            !array_is_list($maximum) ||
+            !array_is_list($available) ||
+            !array_is_list($requested) ||
+            count($maximum) !== $processes ||
+            count($requested) !== $resources ||
+            $process >= $processes
+        ) {
+            throw ValidationException::withMessages([
+                'request' => 'Proceso o dimensiones incorrectas.',
+            ]);
+        }
+
+        // Calcular la matriz Necesidad
+        $need = [];
+
+        for ($i = 0; $i < $processes; $i++) {
+
+            if (
+                !array_is_list($allocation[$i]) ||
+                !array_is_list($maximum[$i]) ||
+                count($allocation[$i]) !== $resources ||
+                count($maximum[$i]) !== $resources
+            ) {
+                throw ValidationException::withMessages([
+                    'allocation' => 'Las dimensiones no coinciden.',
+                ]);
+            }
+
+            $row = [];
+
+            for ($j = 0; $j < $resources; $j++) {
+
+                if ($allocation[$i][$j] > $maximum[$i][$j]) {
+                    throw ValidationException::withMessages([
+                        'allocation' => 'La asignacion supera el maximo.',
+                    ]);
+                }
+
+                $row[] = $maximum[$i][$j] - $allocation[$i][$j];
+            }
+
+            $need[] = $row;
+        }
+
+        // Evaluar la solicitud con el algoritmo del banquero
+        $result = $banker->evaluateRequest(
+            $allocation,
+            $need,
+            $available,
+            $process,
+            $requested
+        );
+
+        // Enviar el resultado al navegador
+        return response()->json([
+            'success' => true,
+            'granted' => $result['granted'],
+            'reason' => $result['reason'],
+            'sequence' => $result['sequence'],
+            'available_after' => $result['available_after'],
+        ]);
+    }
+
 }
