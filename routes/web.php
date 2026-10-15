@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProcessController;
 use App\Http\Controllers\HardwareController;
+use App\Http\Controllers\SchedulerController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -16,3 +17,7 @@ Route::post('/processes/renice', [ProcessController::class, 'renice'])->name('pr
 
 // --- RUTAS DEL MÓDULO 2 (CPU) ---
 Route::get('/hardware', [HardwareController::class, 'index'])->name('hardware.index');
+
+// --- RUTAS DEL MÓDULO 3 (PLANIFICACIÓN CPU) ---
+Route::get('/scheduler', [SchedulerController::class, 'index'])
+    ->name('scheduler.index');
