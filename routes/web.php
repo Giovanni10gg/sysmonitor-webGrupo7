@@ -21,3 +21,5 @@ Route::get('/hardware', [HardwareController::class, 'index'])->name('hardware.in
 // --- RUTAS DEL MÓDULO 3 (PLANIFICACIÓN CPU) ---
 Route::get('/scheduler', [SchedulerController::class, 'index'])
     ->name('scheduler.index');
+Route::post('/scheduler/fcfs', [SchedulerController::class, 'fcfs'])
+    ->name('scheduler.fcfs');
