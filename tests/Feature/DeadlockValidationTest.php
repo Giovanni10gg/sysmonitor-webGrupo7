@@ -1,0 +1,211 @@
+<?php
+
+namespace Tests\Feature;
+
+use Tests\TestCase;
+
+class DeadlockValidationTest extends TestCase
+{
+    // PRUEBA 1: Matrices correctas
+    public function test_acepta_matrices_validas(): void
+    {
+        $response = $this->postJson('/deadlocks/validate', [
+            'allocation' => [
+                [0, 1, 0],
+                [2, 0, 0],
+            ],
+            'maximum' => [
+                [7, 5, 3],
+                [3, 2, 2],
+            ],
+            'available' => [3, 3, 2],
+        ]);
+
+        $response->assertStatus(200);
+
+        $response->assertJson([
+            'success' => true,
+            'processes' => 2,
+            'resources' => 3,
+        ]);
+    }
+
+    // PRUEBA 2: Asignacion mayor al maximo
+    public function test_rechaza_asignacion_incorrecta(): void
+    {
+        $response = $this->postJson('/deadlocks/validate', [
+            'allocation' => [
+                [5, 1],
+            ],
+            'maximum' => [
+                [3, 2],
+            ],
+            'available' => [2, 1],
+        ]);
+
+        $response->assertStatus(422);
+
+        $response->assertJsonValidationErrors([
+            'allocation',
+        ]);
+    }
+
+    // PRUEBA 3: Dimensiones incorrectas
+    public function test_rechaza_dimensiones_incorrectas(): void
+    {
+        $response = $this->postJson('/deadlocks/validate', [
+            'allocation' => [
+                [1, 0, 2],
+            ],
+            'maximum' => [
+                [3, 2],
+            ],
+            'available' => [2, 1, 1],
+        ]);
+
+        $response->assertStatus(422);
+
+        $response->assertJsonValidationErrors([
+            'allocation',
+        ]);
+    }
+// PRUEBA 4: Calculo de la matriz Necesidad
+public function test_calcula_matriz_necesidad(): void
+{
+    $response = $this->postJson('/deadlocks/validate', [
+        'allocation' => [
+            [0, 1, 0],
+            [2, 0, 0],
+        ],
+        'maximum' => [
+            [7, 5, 3],
+            [3, 2, 2],
+        ],
+        'available' => [3, 3, 2],
+    ]);
+
+    $response->assertStatus(200);
+
+    $response->assertJson([
+        'need' => [
+            [7, 4, 3],
+            [1, 2, 2],
+        ],
+    ]);
+  }
+
+    // PRUEBA 5: El sistema se encuentra en estado seguro
+    public function test_detecta_estado_seguro(): void
+    {
+        $response = $this->postJson('/deadlocks/validate', [
+            'allocation' => [
+                [1, 0],
+                [0, 1],
+            ],
+            'maximum' => [
+                [2, 1],
+                [1, 2],
+            ],
+            'available' => [1, 1],
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('safe', true);
+        $response->assertJsonPath('sequence', ['P0', 'P1']);
+    }
+
+    // PRUEBA 6: El sistema se encuentra en estado inseguro
+    public function test_detecta_estado_inseguro(): void
+    {
+        $response = $this->postJson('/deadlocks/validate', [
+            'allocation' => [
+                [1, 0],
+                [0, 1],
+            ],
+            'maximum' => [
+                [2, 1],
+                [1, 2],
+            ],
+            'available' => [0, 0],
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('safe', false);
+        $response->assertJsonPath('sequence', []);
+    }
+
+    // PRUEBA 7: Verificar liberacion de recursos
+    public function test_registra_pasos_del_banquero(): void
+    {
+        $response = $this->postJson('/deadlocks/validate', [
+            'allocation' => [
+                [1, 0],
+                [0, 1],
+            ],
+            'maximum' => [
+                [2, 1],
+                [1, 2],
+            ],
+            'available' => [1, 1],
+        ]);
+
+        $response->assertStatus(200);
+
+        $response->assertJsonPath('safe', true);
+        $response->assertJsonPath('steps.0.process', 'P0');
+        $response->assertJsonPath('steps.0.work_before', [1, 1]);
+        $response->assertJsonPath('steps.0.work_after', [2, 1]);
+        $response->assertJsonPath('steps.1.process', 'P1');
+        $response->assertJsonPath('steps.1.work_after', [2, 2]);
+        $response->assertJsonPath('pending', []);
+    }
+
+    // PRUEBA 8: Estado inseguro con proceso pendiente
+    public function test_identifica_procesos_pendientes(): void
+    {
+        $response = $this->postJson('/deadlocks/validate', [
+            'allocation' => [
+                [1, 0],
+                [0, 1],
+            ],
+            'maximum' => [
+                [1, 0],
+                [2, 2],
+            ],
+            'available' => [0, 0],
+        ]);
+
+        $response->assertStatus(200);
+
+        $response->assertJsonPath('safe', false);
+        $response->assertJsonPath('sequence', ['P0']);
+        $response->assertJsonPath('pending', ['P1']);
+        $response->assertJsonPath('steps.0.work_after', [1, 0]);
+    }
+
+    // Rechazar mas de diez procesos
+    public function test_rechaza_mas_de_diez_procesos(): void
+    {
+        $response = $this->postJson('/deadlocks/validate', [
+            'allocation' => array_fill(0, 11, [0]),
+            'maximum' => array_fill(0, 11, [1]),
+            'available' => [1],
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['allocation']);
+    }
+
+    // Rechazar indices exteriores incorrectos
+    public function test_rechaza_indices_no_consecutivos(): void
+    {
+        $response = $this->postJson('/deadlocks/validate', [
+            'allocation' => [1 => [0]],
+            'maximum' => [[1]],
+            'available' => [1],
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['allocation']);
+    }
+}
