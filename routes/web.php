@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProcessController;
 use App\Http\Controllers\HardwareController;
 use App\Http\Controllers\DeadlockController;
+use App\Http\Controllers\SchedulerController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -26,3 +27,6 @@ Route::post('/deadlocks/validate',
     ->name('deadlocks.validate');
 Route::post('/deadlocks/request', [DeadlockController::class, 'requestResources'])->name('deadlocks.request');
 Route::post('/deadlocks/cycles', [DeadlockController::class, 'analyzeCycles'])->name('deadlocks.cycles');
+// --- RUTAS DEL MÓDULO 3 (PLANIFICACIÓN CPU) ---
+Route::get('/scheduler', [SchedulerController::class, 'index'])
+    ->name('scheduler.index');
