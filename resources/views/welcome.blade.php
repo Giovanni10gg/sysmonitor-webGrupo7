@@ -106,24 +106,26 @@
                 </div>
             </div>
 
-            <!-- Módulo 3: En desarrollo -->
-            <div class="col-md-6 col-lg-4">
-                <div class="card card-module h-100 shadow-sm bg-light text-muted">
-                    <div class="card-body d-flex flex-column">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <span class="badge bg-warning bg-opacity-20 text-dark border border-warning-subtle badge-status">
-                                <i class="bi bi-clock-history me-1"></i>En Desarrollo
-                            </span>
-                            <span class="text-muted fw-bold">Módulo 03</span>
-                        </div>
-                        <h5 class="card-title fw-bold text-secondary">Módulo 3</h5>
-                        <p class="card-text text-muted flex-grow-1">
-                            Módulo en fase de preparación e integración por el equipo de desarrollo.
-                        </p>
-                        <button class="btn btn-outline-secondary w-100 mt-3" disabled>Próximamente</button>
-                    </div>
-                </div>
+             <!-- Módulo 3: Planificación de Procesos -->
+<div class="col-md-6 col-lg-4">
+    <div class="card card-module h-100 shadow-sm">
+        <div class="card-body d-flex flex-column">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <span class="badge bg-success bg-opacity-10 text-success border border-success-subtle badge-status">
+                    <i class="bi bi-check-circle-fill me-1"></i>Activo
+                </span>
+                <span class="text-muted fw-bold">Módulo 03</span>
             </div>
+            <h5 class="card-title fw-bold text-dark">Planificación de Procesos</h5>
+            <p class="card-text text-secondary flex-grow-1">
+                Simulación y visualización de algoritmos de planificación de la CPU.
+            </p>
+            <a href="/scheduler" class="btn btn-primary w-100 mt-3">
+                <i class="bi bi-calendar-event me-1"></i> Abrir Módulo
+            </a>
+        </div>
+    </div>
+</div>
 
             <!-- Módulo 4: En desarrollo -->
             <div class="col-md-6 col-lg-4">
