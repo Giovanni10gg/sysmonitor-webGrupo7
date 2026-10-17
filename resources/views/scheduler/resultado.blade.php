@@ -24,5 +24,12 @@
 
 </table>
 
+<div class="mt-3">
+    <a href="{{ route('scheduler.index') }}" class="btn btn-primary">
+        Volver al formulario
+    </a>
+
+</div>
+</div>
 </body>
 </html>
