@@ -5,7 +5,7 @@
 </head>
 <body>
 
-<h1>Resultado FCFS</h1>
+<h2>Resultado {{ $algoritmo }}</h2>
 
 <table border="1">
     <tr>

@@ -23,3 +23,5 @@ Route::get('/scheduler', [SchedulerController::class, 'index'])
     ->name('scheduler.index');
 Route::post('/scheduler/fcfs', [SchedulerController::class, 'fcfs'])
     ->name('scheduler.fcfs');
+Route::post('/scheduler/sjf', [SchedulerController::class, 'sjf'])
+    ->name('scheduler.sjf');

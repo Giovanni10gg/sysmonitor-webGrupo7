@@ -49,13 +49,25 @@
                     </tr>
                 </tbody>
             </table>
-
-            <div class="mt-3">
-                <button type="submit" class="btn btn-primary">Simular FCFS</button>
-            </div>
-        </form>
-    </div>
-
+	<div class="mt-3">
+ 
+<button type="submit"
+formaction="{{ route('scheduler.fcfs') }}"
+class="btn btn-primary">
+Simular FCFS
+</button>
+ 
+<button type="submit"
+formaction="{{ route('scheduler.sjf') }}"
+class="btn btn-secondary">
+Simular SJF
+</button>
+ 
+</div>
+ 
+</form>
+    <button type="submit"
+            formaction="{{ sdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Bootstrap JS (Opcional, por si requieres componentes interactivos) -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
