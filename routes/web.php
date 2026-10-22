@@ -25,3 +25,5 @@ Route::post('/scheduler/fcfs', [SchedulerController::class, 'fcfs'])
     ->name('scheduler.fcfs');
 Route::post('/scheduler/sjf', [SchedulerController::class, 'sjf'])
     ->name('scheduler.sjf');
+Route::post('/scheduler/prioridad', [SchedulerController::class, 'prioridad'])
+    ->name('scheduler.prioridad');

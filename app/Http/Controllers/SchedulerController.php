@@ -92,4 +92,43 @@ class SchedulerController extends Controller
     );
 
     }
+	public function prioridad(Request $request)
+{
+    $datos = $request->input('processes');
+
+    $procesos = [];
+
+    foreach ($datos as $i => $proceso) {
+
+        $procesos[] = [
+            'nombre' => 'P' . ($i + 1),
+            'llegada' => (int) $proceso['arrival_time'],
+            'rafaga' => (int) $proceso['burst_time'],
+            'prioridad' => (int) $proceso['priority'],
+        ];
+    }
+
+    usort($procesos, function ($a, $b) {
+        return $a['prioridad'] <=> $b['prioridad'];
+    });
+
+    $tiempoActual = 0;
+
+    foreach ($procesos as &$proceso) {
+
+        $proceso['espera'] = $tiempoActual;
+
+        $tiempoActual += $proceso['rafaga'];
+
+        $proceso['retorno'] = $tiempoActual;
+    }
+
+    return view(
+        'scheduler.resultado',
+        [
+            'procesos' => $procesos,
+            'algoritmo' => 'PRIORIDADES'
+        ]
+    );
+ }
 }
