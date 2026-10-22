@@ -28,20 +28,31 @@ class SchedulerController extends Controller
         }
 
         $tiempoActual = 0;
+$gantt = [];
 
-        foreach ($procesos as &$proceso) {
+foreach ($procesos as &$proceso) {
 
-            if ($tiempoActual < $proceso['llegada']) {
-                $tiempoActual = $proceso['llegada'];
-            }
+    $inicio = $tiempoActual;
 
-            $proceso['espera'] = $tiempoActual - $proceso['llegada'];
+    if ($tiempoActual < $proceso['llegada']) {
+        $tiempoActual = $proceso['llegada'];
+    }
 
-            $tiempoActual += $proceso['rafaga'];
+    $proceso['espera'] =
+        $tiempoActual - $proceso['llegada'];
 
-            $proceso['retorno'] =
-                $tiempoActual - $proceso['llegada'];
-        }
+    $tiempoActual += $proceso['rafaga'];
+
+    $proceso['retorno'] =
+        $tiempoActual - $proceso['llegada'];
+
+    $gantt[] = [
+        'proceso' => $proceso['nombre'],
+        'inicio' => $inicio,
+        'fin' => $tiempoActual
+    ];
+}
+	unset($proceso);
 	$totalEspera = 0;
 $totalRetorno = 0;
 
@@ -62,7 +73,8 @@ $promedioRetorno = $totalRetorno / count($procesos);
         'procesos' => $procesos,
         'algoritmo' => 'FCFS',
         'promedioEspera' => $promedioEspera,
-        'promedioRetorno' => $promedioRetorno
+        'promedioRetorno' => $promedioRetorno,
+	'gantt' => $gantt
     ]
   );
     }
@@ -97,6 +109,7 @@ $promedioRetorno = $totalRetorno / count($procesos);
 
             $proceso['retorno'] = $tiempoActual;
         }
+	unset($proceso);
 	$totalEspera = 0;
 $totalRetorno = 0;
 
@@ -152,7 +165,7 @@ $promedioRetorno = $totalRetorno / count($procesos);
 
         $proceso['retorno'] = $tiempoActual;
     }
-   
+        unset($proceso);
         $tiempo = 0;
 
     foreach ($procesos as &$proceso) {
@@ -163,6 +176,7 @@ $promedioRetorno = $totalRetorno / count($procesos);
 
         $proceso['retorno'] = $tiempo;
     }
+    unset($proceso);
     $totalEspera = 0;
 $totalRetorno = 0;
 
@@ -197,12 +211,14 @@ $promedioRetorno = $totalRetorno / count($procesos);
     foreach ($datos as $i => $proceso) {
 
         $procesos[] = [
-            'nombre' => 'P' . ($i + 1),
-            'rafaga' => (int) $proceso['burst_time'],
-            'restante' => (int) $proceso['burst_time'],
-            'espera' => 0,
-            'retorno' => 0,
-        ];
+    'nombre' => 'P' . ($i + 1),
+    'llegada' => (int) $proceso['arrival_time'],
+    'rafaga' => (int) $proceso['burst_time'],
+    'prioridad' => (int) $proceso['priority'],
+    'restante' => (int) $proceso['burst_time'],
+    'espera' => 0,
+    'retorno' => 0,
+    ];
     }
 
     $tiempo = 0;
@@ -236,7 +252,7 @@ $promedioRetorno = $totalRetorno / count($procesos);
             }
         }
     }
-
+	unset($proceso);
         $tiempo = 0;
 
     foreach ($procesos as &$proceso) {
@@ -247,6 +263,7 @@ $promedioRetorno = $totalRetorno / count($procesos);
 
         $proceso['retorno'] = $tiempo;
     }
+    unset($proceso);
     $totalEspera = 0;
 $totalRetorno = 0;
 
@@ -280,11 +297,14 @@ $promedioRetorno = $totalRetorno / count($procesos);
     foreach ($datos as $i => $proceso) {
 
         $procesos[] = [
-            'nombre' => 'P' . ($i + 1),
-            'rafaga' => (int) $proceso['burst_time'],
-            'espera' => 0,
-            'retorno' => 0,
-        ];
+    'nombre' => 'P' . ($i + 1),
+    'llegada' => (int) $proceso['arrival_time'],
+    'rafaga' => (int) $proceso['burst_time'],
+    'prioridad' => (int) $proceso['priority'],
+    'restante' => (int) $proceso['burst_time'],
+    'espera' => 0,
+    'retorno' => 0,
+    ];
     }
 
     usort($procesos, function ($a, $b) {
@@ -301,6 +321,7 @@ $promedioRetorno = $totalRetorno / count($procesos);
 
         $proceso['retorno'] = $tiempo;
     }
+    unset($proceso);
     $totalEspera = 0;
 $totalRetorno = 0;
 
