@@ -42,14 +42,29 @@ class SchedulerController extends Controller
             $proceso['retorno'] =
                 $tiempoActual - $proceso['llegada'];
         }
+	$totalEspera = 0;
+$totalRetorno = 0;
+
+foreach ($procesos as $proceso) {
+
+    $totalEspera += $proceso['espera'];
+
+    $totalRetorno += $proceso['retorno'];
+}
+
+$promedioEspera = $totalEspera / count($procesos);
+
+$promedioRetorno = $totalRetorno / count($procesos);
 
         return view(
     'scheduler.resultado',
     [
         'procesos' => $procesos,
-        'algoritmo' => 'FCFS'
+        'algoritmo' => 'FCFS',
+        'promedioEspera' => $promedioEspera,
+        'promedioRetorno' => $promedioRetorno
     ]
-       );
+  );
     }
 
     public function sjf(Request $request)
@@ -82,12 +97,27 @@ class SchedulerController extends Controller
 
             $proceso['retorno'] = $tiempoActual;
         }
+	$totalEspera = 0;
+$totalRetorno = 0;
+
+foreach ($procesos as $proceso) {
+
+    $totalEspera += $proceso['espera'];
+
+    $totalRetorno += $proceso['retorno'];
+}
+
+$promedioEspera = $totalEspera / count($procesos);
+
+$promedioRetorno = $totalRetorno / count($procesos);
 
         return view(
     'scheduler.resultado',
     [
         'procesos' => $procesos,
-        'algoritmo' => 'SJF'
+        'algoritmo' => 'FCFS',
+        'promedioEspera' => $promedioEspera,
+        'promedioRetorno' => $promedioRetorno
     ]
     );
 
@@ -122,14 +152,40 @@ class SchedulerController extends Controller
 
         $proceso['retorno'] = $tiempoActual;
     }
+   
+        $tiempo = 0;
+
+    foreach ($procesos as &$proceso) {
+
+        $proceso['espera'] = $tiempo;
+
+        $tiempo += $proceso['rafaga'];
+
+        $proceso['retorno'] = $tiempo;
+    }
+    $totalEspera = 0;
+$totalRetorno = 0;
+
+foreach ($procesos as $proceso) {
+
+    $totalEspera += $proceso['espera'];
+
+    $totalRetorno += $proceso['retorno'];
+}
+
+$promedioEspera = $totalEspera / count($procesos);
+
+$promedioRetorno = $totalRetorno / count($procesos);
 
     return view(
-        'scheduler.resultado',
-        [
-            'procesos' => $procesos,
-            'algoritmo' => 'PRIORIDADES'
-        ]
-    );
+    'scheduler.resultado',
+    [
+        'procesos' => $procesos,
+        'algoritmo' => 'FCFS',
+        'promedioEspera' => $promedioEspera,
+        'promedioRetorno' => $promedioRetorno
+    ]
+  );
  }
 	public function roundRobin(Request $request)
 {
@@ -181,17 +237,93 @@ class SchedulerController extends Controller
         }
     }
 
+        $tiempo = 0;
+
+    foreach ($procesos as &$proceso) {
+
+        $proceso['espera'] = $tiempo;
+
+        $tiempo += $proceso['rafaga'];
+
+        $proceso['retorno'] = $tiempo;
+    }
+    $totalEspera = 0;
+$totalRetorno = 0;
+
+foreach ($procesos as $proceso) {
+
+    $totalEspera += $proceso['espera'];
+
+    $totalRetorno += $proceso['retorno'];
+}
+
+$promedioEspera = $totalEspera / count($procesos);
+
+$promedioRetorno = $totalRetorno / count($procesos);
+
    return view(
     'scheduler.resultado',
     [
         'procesos' => $procesos,
-        'algoritmo' => 'ROUND ROBIN'
+        'algoritmo' => 'FCFS',
+        'promedioEspera' => $promedioEspera,
+        'promedioRetorno' => $promedioRetorno
     ]
 );
 }
 	public function srtf(Request $request)
 {
-    dd($request->all());
+    $datos = $request->input('processes');
+
+    $procesos = [];
+
+    foreach ($datos as $i => $proceso) {
+
+        $procesos[] = [
+            'nombre' => 'P' . ($i + 1),
+            'rafaga' => (int) $proceso['burst_time'],
+            'espera' => 0,
+            'retorno' => 0,
+        ];
+    }
+
+    usort($procesos, function ($a, $b) {
+        return $a['rafaga'] <=> $b['rafaga'];
+    });
+
+    $tiempo = 0;
+
+    foreach ($procesos as &$proceso) {
+
+        $proceso['espera'] = $tiempo;
+
+        $tiempo += $proceso['rafaga'];
+
+        $proceso['retorno'] = $tiempo;
+    }
+    $totalEspera = 0;
+$totalRetorno = 0;
+
+foreach ($procesos as $proceso) {
+
+    $totalEspera += $proceso['espera'];
+
+    $totalRetorno += $proceso['retorno'];
+}
+
+$promedioEspera = $totalEspera / count($procesos);
+
+$promedioRetorno = $totalRetorno / count($procesos);
+
+    return view(
+    'scheduler.resultado',
+    [
+        'procesos' => $procesos,
+        'algoritmo' => 'FCFS',
+        'promedioEspera' => $promedioEspera,
+        'promedioRetorno' => $promedioRetorno
+    ]
+);
 }
 
 }

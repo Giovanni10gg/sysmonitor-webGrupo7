@@ -23,6 +23,19 @@
     @endforeach
 
 </table>
+<hr>
+
+<h3>Promedios</h3>
+
+<p>
+    <strong>Promedio de espera:</strong>
+    {{ number_format($promedioEspera, 2) }}
+</p>
+
+<p>
+    <strong>Promedio de retorno:</strong>
+    {{ number_format($promedioRetorno, 2) }}
+</p>
 
 <div class="mt-3">
     <a href="{{ route('scheduler.index') }}" class="btn btn-primary">
