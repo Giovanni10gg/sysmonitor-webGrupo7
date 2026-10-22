@@ -27,3 +27,5 @@ Route::post('/scheduler/sjf', [SchedulerController::class, 'sjf'])
     ->name('scheduler.sjf');
 Route::post('/scheduler/prioridad', [SchedulerController::class, 'prioridad'])
     ->name('scheduler.prioridad');
+Route::post('/scheduler/roundrobin', [SchedulerController::class, 'roundRobin'])
+    ->name('scheduler.roundrobin');

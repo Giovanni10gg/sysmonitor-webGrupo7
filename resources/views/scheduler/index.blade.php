@@ -49,9 +49,17 @@
                     </tr>
                 </tbody>
             </table>
-
+	
     <!-- Tus botones -->
     <div class="mb-3">
+	
+	    <label class="form-label">Quantum</label>
+    <input type="number"
+           name="quantum"
+           class="form-control"
+           value="2"
+           min="1"
+           required>
         <button type="submit" formaction="{{ route('scheduler.fcfs') }}" class="btn btn-primary">
             Simular FCFS
         </button>
@@ -62,6 +70,12 @@
 
         <button type="submit" formaction="{{ route('scheduler.prioridad') }}" class="btn btn-warning">
             Simular Prioridades
+        </button>
+	 
+	<button type="submit"
+        formaction="{{ route('scheduler.roundrobin') }}"
+        class="btn btn-info">
+        Simular Round Robin
         </button>
     </div>
 </form>

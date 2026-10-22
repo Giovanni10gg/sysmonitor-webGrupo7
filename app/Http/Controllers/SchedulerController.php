@@ -131,4 +131,63 @@ class SchedulerController extends Controller
         ]
     );
  }
+	public function roundRobin(Request $request)
+{
+    $datos = $request->input('processes');
+    $quantum = (int) $request->input('quantum');
+
+    $procesos = [];
+
+    foreach ($datos as $i => $proceso) {
+
+        $procesos[] = [
+            'nombre' => 'P' . ($i + 1),
+            'rafaga' => (int) $proceso['burst_time'],
+            'restante' => (int) $proceso['burst_time'],
+            'espera' => 0,
+            'retorno' => 0,
+        ];
+    }
+
+    $tiempo = 0;
+    $completados = 0;
+    $totalProcesos = count($procesos);
+
+    while ($completados < $totalProcesos) {
+
+        foreach ($procesos as &$proceso) {
+
+            if ($proceso['restante'] > 0) {
+
+                if ($proceso['restante'] > $quantum) {
+
+                    $tiempo += $quantum;
+                    $proceso['restante'] -= $quantum;
+
+                } else {
+
+                    $tiempo += $proceso['restante'];
+
+                    $proceso['retorno'] = $tiempo;
+
+                    $proceso['espera'] =
+                        $proceso['retorno'] - $proceso['rafaga'];
+
+                    $proceso['restante'] = 0;
+
+                    $completados++;
+                }
+            }
+        }
+    }
+
+   return view(
+    'scheduler.resultado',
+    [
+        'procesos' => $procesos,
+        'algoritmo' => 'ROUND ROBIN'
+    ]
+);
+}
+
 }
