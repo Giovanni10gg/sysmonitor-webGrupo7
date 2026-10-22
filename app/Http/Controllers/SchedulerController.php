@@ -189,5 +189,9 @@ class SchedulerController extends Controller
     ]
 );
 }
+	public function srtf(Request $request)
+{
+    dd($request->all());
+}
 
 }

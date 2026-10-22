@@ -77,6 +77,12 @@
         class="btn btn-info">
         Simular Round Robin
         </button>
+	
+	<button type="submit"
+        formaction="{{ route('scheduler.srtf') }}"
+        class="btn btn-danger">
+    Simular SRTF
+    </button>
     </div>
 </form>
 
