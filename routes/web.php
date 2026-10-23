@@ -33,3 +33,5 @@ Route::post('/scheduler/srtf', [SchedulerController::class, 'srtf'])
     ->name('scheduler.srtf');
 Route::get('/scheduler/historial', [SchedulerController::class, 'historial'])
     ->name('scheduler.historial');
+Route::get('/scheduler/comparativa', [SchedulerController::class, 'comparativa'])
+    ->name('scheduler.comparativa');

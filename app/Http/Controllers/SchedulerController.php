@@ -401,4 +401,16 @@ $promedioRetorno = $totalRetorno / count($procesos);
     );
 }
 
+ public function comparativa()
+{
+    $simulaciones = Simulacion::orderBy('id', 'desc')->get();
+
+    return view(
+        'scheduler.comparativa',
+        [
+            'simulaciones' => $simulaciones
+        ]
+    );
+}
+
 }

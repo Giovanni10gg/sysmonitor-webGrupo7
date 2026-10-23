@@ -90,6 +90,14 @@
         Ver Historial de Simulaciones
     </button>
 </a>
+
+  <br><br>
+
+<a href="{{ route('scheduler.comparativa') }}">
+    <button type="button">
+        Ver Comparativa de Algoritmos
+    </button>
+</a>
     </div>
 </form>
 
