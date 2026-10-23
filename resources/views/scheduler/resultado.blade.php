@@ -43,11 +43,11 @@
     {{ number_format($promedioRetorno, 2) }}
 </p>
 
-   <hr>
+@if(isset($gantt) && count($gantt) > 0)
 
 <h3>Diagrama de Gantt</h3>
 
-<div style="display:flex; margin-bottom:10px;">
+<div style="display:flex;">
 
 @foreach($gantt as $bloque)
 
@@ -81,6 +81,8 @@ text-align:center;
 </div>
 
 </div>
+
+@endif
 
 <div class="mt-3">
     <a href="{{ route('scheduler.index') }}" class="btn btn-primary">

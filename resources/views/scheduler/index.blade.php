@@ -83,6 +83,13 @@
         class="btn btn-danger">
     Simular SRTF
     </button>
+	<br><br>
+
+<a href="{{ route('scheduler.historial') }}">
+    <button type="button">
+        Ver Historial de Simulaciones
+    </button>
+</a>
     </div>
 </form>
 

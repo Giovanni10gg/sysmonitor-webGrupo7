@@ -31,3 +31,5 @@ Route::post('/scheduler/roundrobin', [SchedulerController::class, 'roundRobin'])
     ->name('scheduler.roundrobin');
 Route::post('/scheduler/srtf', [SchedulerController::class, 'srtf'])
     ->name('scheduler.srtf');
+Route::get('/scheduler/historial', [SchedulerController::class, 'historial'])
+    ->name('scheduler.historial');

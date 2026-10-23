@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Models\Simulacion;
 
 class SchedulerController extends Controller
 {
@@ -65,6 +66,12 @@ foreach ($procesos as $proceso) {
 $promedioEspera = $totalEspera / count($procesos);
 
 $promedioRetorno = $totalRetorno / count($procesos);
+
+	Simulacion::create([
+    'algoritmo' => 'FCFS',
+    'promedio_espera' => $promedioEspera,
+    'promedio_retorno' => $promedioRetorno
+    ]);
 
         return view(
     'scheduler.resultado',
@@ -132,6 +139,12 @@ $promedioEspera = $totalEspera / count($procesos);
 
 $promedioRetorno = $totalRetorno / count($procesos);
 
+     Simulacion::create([
+    'algoritmo' => 'SJF',
+    'promedio_espera' => $promedioEspera,
+    'promedio_retorno' => $promedioRetorno
+   ]);
+
         return view(
     'scheduler.resultado',
     [
@@ -197,6 +210,12 @@ foreach ($procesos as $proceso) {
 $promedioEspera = $totalEspera / count($procesos);
 
 $promedioRetorno = $totalRetorno / count($procesos);
+
+	Simulacion::create([
+    'algoritmo' => 'PRIORIDADES',
+    'promedio_espera' => $promedioEspera,
+    'promedio_retorno' => $promedioRetorno
+    ]);
 
     return view(
     'scheduler.resultado',
@@ -286,13 +305,21 @@ $promedioEspera = $totalEspera / count($procesos);
 
 $promedioRetorno = $totalRetorno / count($procesos);
 
+   Simulacion::create([
+    'algoritmo' => 'ROUND ROBIN',
+    'promedio_espera' => $promedioEspera,
+    'promedio_retorno' => $promedioRetorno
+   ]);   
+	
+   $gantt = [];
    return view(
     'scheduler.resultado',
     [
         'procesos' => $procesos,
         'algoritmo' => 'ROUND ROBIN',
         'promedioEspera' => $promedioEspera,
-        'promedioRetorno' => $promedioRetorno
+        'promedioRetorno' => $promedioRetorno,
+	'gantt' => $gantt
     ]
 );
 }
@@ -344,15 +371,34 @@ $promedioEspera = $totalEspera / count($procesos);
 
 $promedioRetorno = $totalRetorno / count($procesos);
 
+    Simulacion::create([
+    'algoritmo' => 'SRTF',
+    'promedio_espera' => $promedioEspera,
+    'promedio_retorno' => $promedioRetorno
+     ]);
+
+    $gantt = [];
     return view(
     'scheduler.resultado',
     [
         'procesos' => $procesos,
         'algoritmo' => 'SRTF',
         'promedioEspera' => $promedioEspera,
-        'promedioRetorno' => $promedioRetorno
+        'promedioRetorno' => $promedioRetorno,
+	'gantt' => $gantt
     ]
 );
+}
+	public function historial()
+{
+    $simulaciones = Simulacion::orderBy('id', 'desc')->get();
+
+    return view(
+        'scheduler.historial',
+        [
+            'simulaciones' => $simulaciones
+        ]
+    );
 }
 
 }
