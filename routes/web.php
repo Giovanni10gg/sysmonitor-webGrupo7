@@ -30,3 +30,17 @@ Route::post('/deadlocks/cycles', [DeadlockController::class, 'analyzeCycles'])->
 // --- RUTAS DEL MÓDULO 3 (PLANIFICACIÓN CPU) ---
 Route::get('/scheduler', [SchedulerController::class, 'index'])
     ->name('scheduler.index');
+Route::post('/scheduler/fcfs', [SchedulerController::class, 'fcfs'])
+    ->name('scheduler.fcfs');
+Route::post('/scheduler/sjf', [SchedulerController::class, 'sjf'])
+    ->name('scheduler.sjf');
+Route::post('/scheduler/prioridad', [SchedulerController::class, 'prioridad'])
+    ->name('scheduler.prioridad');
+Route::post('/scheduler/roundrobin', [SchedulerController::class, 'roundRobin'])
+    ->name('scheduler.roundrobin');
+Route::post('/scheduler/srtf', [SchedulerController::class, 'srtf'])
+    ->name('scheduler.srtf');
+Route::get('/scheduler/historial', [SchedulerController::class, 'historial'])
+    ->name('scheduler.historial');
+Route::get('/scheduler/comparativa', [SchedulerController::class, 'comparativa'])
+    ->name('scheduler.comparativa');
