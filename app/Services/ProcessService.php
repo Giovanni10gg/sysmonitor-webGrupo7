@@ -17,14 +17,16 @@ class ProcessService
             if (count($cols) < 8) continue;
 
             $processes[] = [
-                'pid' => (int)$cols[0],
-                'ppid' => (int)$cols[1],
-                'user' => $cols[2],
-                'state' => substr($cols[3], 0, 1),
-                'nice' => (int)$cols[4],
-                'cpu' => (float)$cols[5],
-                'mem' => (float)$cols[6],
-                'cmd' => $cols[7],
+                'pid'     => (int)$cols[0],
+                'ppid'    => (int)$cols[1],
+                'user'    => $cols[2],
+                'state'   => substr($cols[3], 0, 1),
+                'stat'    => $cols[3],
+                'nice'    => (int)$cols[4],
+                'cpu'     => (float)$cols[5],
+                'mem'     => (float)$cols[6],
+                'cmd'     => $cols[7],
+                'command' => $cols[7], // Compatibilidad de llaves
             ];
         }
 
@@ -33,11 +35,13 @@ class ProcessService
 
     public function getStateSummary(array $processes): array
     {
-        $summary = ['R' => 0, 'S' => 0, 'D' => 0, 'Z' => 0, 'T' => 0];
+        $summary = ['R' => 0, 'S' => 0, 'D' => 0, 'Z' => 0, 'T' => 0, 'total' => count($processes)];
         foreach ($processes as $proc) {
-            $state = $proc['state'];
+            $state = $proc['state'] ?? 'S';
             if (isset($summary[$state])) {
                 $summary[$state]++;
+            } else {
+                $summary['S']++;
             }
         }
         return $summary;

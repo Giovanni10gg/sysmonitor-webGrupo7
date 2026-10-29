@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Services\ProcessService;
 use App\Models\TestProcess;
 use App\Models\Log;
+use App\Models\User;
 
 class ProcessController extends Controller
 {
@@ -16,23 +17,50 @@ class ProcessController extends Controller
         $this->processService = $processService;
     }
 
-    public function index()
+    public function index(Request $request)
     {
         $processes = $this->processService->getProcessList();
+
+        // Filtro de búsqueda
+        $search = strtolower(trim($request->input('search', '')));
+        if (!empty($search)) {
+            $processes = array_filter($processes, function ($proc) use ($search) {
+                $pid = (string) ($proc['pid'] ?? '');
+                $user = (string) ($proc['user'] ?? '');
+                $cmd = (string) ($proc['cmd'] ?? $proc['command'] ?? '');
+
+                return str_contains(strtolower($pid), $search) ||
+                       str_contains(strtolower($user), $search) ||
+                       str_contains(strtolower($cmd), $search);
+            });
+        }
+
         $summary = $this->processService->getStateSummary($processes);
         $whitelistedPids = TestProcess::pluck('pid')->toArray();
 
-        return view('processes.index', compact('processes', 'summary', 'whitelistedPids'));
+        // Carga directa de logs sin requerir relaciones en el Modelo
+        $spawnLogs = Log::where('action', 'SPAWN')
+            ->get()
+            ->keyBy('target_process_pid');
+
+        $users = User::pluck('name', 'id')->toArray();
+
+        return view('processes.index', compact('processes', 'summary', 'whitelistedPids', 'spawnLogs', 'users'));
     }
 
     public function spawn(Request $request)
     {
-        $seconds = (int) $request->input('seconds', 300);
+        $seconds = (int) ($request->input('seconds') ?? $request->input('command', 300));
+        if ($seconds <= 0) $seconds = 300;
+
         $escapedSeconds = escapeshellarg($seconds);
-        
         $pid = (int) trim(shell_exec("sleep {$escapedSeconds} > /dev/null 2>&1 & echo $!"));
 
         if ($pid > 0) {
+            $user = auth()->user();
+            $userName = $user->name ?? 'Usuario';
+            $userRole = strtoupper($user->role ?? 'ADMIN');
+
             TestProcess::create([
                 'pid' => $pid,
                 'command' => "sleep {$seconds}",
@@ -42,10 +70,10 @@ class ProcessController extends Controller
                 'user_id' => auth()->id() ?? null,
                 'action' => 'SPAWN',
                 'target_process_pid' => $pid,
-                'result' => "Proceso de prueba iniciado con PID {$pid}",
+                'result' => "Proceso iniciado por {$userName} ({$userRole}) con PID {$pid}",
             ]);
 
-            return back()->with('success', "Proceso de prueba creado con PID: {$pid}");
+            return back()->with('success', "Proceso de prueba iniciado por {$userName} ({$userRole}) con PID: {$pid}");
         }
 
         return back()->with('error', 'Error al intentar iniciar el proceso de prueba.');
@@ -75,11 +103,12 @@ class ProcessController extends Controller
         if ($returnCode === 0) {
             $testProc->delete();
 
+            $userName = auth()->user()->name ?? 'Usuario';
             Log::create([
                 'user_id' => auth()->id() ?? null,
                 'action' => 'KILL',
                 'target_process_pid' => $pid,
-                'result' => "Proceso PID {$pid} eliminado con SIGKILL (9)",
+                'result' => "Proceso PID {$pid} eliminado con SIGKILL (9) por {$userName}",
             ]);
 
             return back()->with('success', "Proceso PID {$pid} finalizado correctamente.");
@@ -90,6 +119,9 @@ class ProcessController extends Controller
 
     public function renice(Request $request)
     {
+        $nice = $request->input('nice') ?? $request->input('priority');
+        $request->merge(['nice' => $nice]);
+
         $request->validate([
             'pid' => 'required|integer',
             'nice' => 'required|integer|between:-20,19',
@@ -110,11 +142,13 @@ class ProcessController extends Controller
         exec("renice -n {$escapedNice} -p {$escapedPid}", $output, $returnCode);
 
         if ($returnCode === 0) {
+            $userName = auth()->user()->name ?? 'Usuario';
+
             Log::create([
                 'user_id' => auth()->id() ?? null,
                 'action' => 'RENICE',
                 'target_process_pid' => $pid,
-                'result' => "Prioridad cambiada a {$nice} para PID {$pid}",
+                'result' => "Prioridad cambiada a {$nice} para PID {$pid} por {$userName}",
             ]);
 
             return back()->with('success', "Prioridad del PID {$pid} modificada a {$nice}.");
