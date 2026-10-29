@@ -7,6 +7,13 @@
 
 @section('content')
 
+@php
+    $spawnLogsArr = $spawnLogs ?? [];
+    $usersArr = $users ?? [];
+    $whitelistedPidsArr = $whitelistedPids ?? [];
+    $processesArr = $processes ?? [];
+@endphp
+
 <!-- TARJETAS KPIs -->
 <div class="row g-3 mb-4">
     <div class="col-12 col-sm-6 col-xl-3">
@@ -14,7 +21,7 @@
             <div class="d-flex align-items-center justify-content-between">
                 <div>
                     <span class="text-muted small fw-semibold text-uppercase">Total Procesos</span>
-                    <h2 class="fw-bold mb-0 mt-1 font-mono text-dark">{{ $summary['total'] ?? count($processes) }}</h2>
+                    <h2 class="fw-bold mb-0 mt-1 font-mono text-dark">{{ $summary['total'] ?? count($processesArr) }}</h2>
                 </div>
                 <div class="bg-primary bg-opacity-10 text-primary rounded-3 p-3">
                     <i class="fa-solid fa-list-check fa-lg"></i>
@@ -56,7 +63,7 @@
             <div class="d-flex align-items-center justify-content-between">
                 <div>
                     <span class="text-muted small fw-semibold text-uppercase">Procesos App</span>
-                    <h2 class="fw-bold mb-0 mt-1 font-mono text-warning">{{ count($whitelistedPids) }}</h2>
+                    <h2 class="fw-bold mb-0 mt-1 font-mono text-warning">{{ count($whitelistedPidsArr) }}</h2>
                 </div>
                 <div class="bg-warning bg-opacity-10 text-warning rounded-3 p-3">
                     <i class="fa-solid fa-flask fa-lg"></i>
@@ -100,23 +107,23 @@
                             <th>PID</th>
                             <th>Usuario / Creador</th>
                             <th>CPU %</th>
-                            <th>Memoria %</th>
+                            <th>RAM Usada</th>
                             <th>Comando</th>
                             <th class="text-end">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @forelse($processes as $proc)
+                        @forelse($processesArr as $proc)
                         @php
                             $pid = $proc['pid'] ?? 0;
                             $user = $proc['user'] ?? 'N/A';
                             $cpu = $proc['cpu'] ?? 0;
-                            $mem = $proc['mem'] ?? 0;
+                            $memMb = $proc['mem_mb'] ?? $proc['mem'] ?? 0;
                             $cmd = $proc['cmd'] ?? $proc['command'] ?? 'N/A';
-                            $isAppProcess = in_array($pid, $whitelistedPids);
-                            $logInfo = $spawnLogs[$pid] ?? null;
-                            $creatorId = $logInfo ? $logInfo->user_id : null;
-                            $creatorName = ($creatorId && isset($users[$creatorId])) ? $users[$creatorId] : 'Administrador';
+                            $isAppProcess = in_array($pid, $whitelistedPidsArr);
+                            $logInfo = $spawnLogsArr[$pid] ?? null;
+                            $creatorId = $logInfo ? ($logInfo->user_id ?? null) : null;
+                            $creatorName = ($creatorId && isset($usersArr[$creatorId])) ? $usersArr[$creatorId] : 'Administrador';
                         @endphp
                         <tr class="{{ $isAppProcess ? 'table-warning-subtle' : '' }}">
                             <td>
@@ -141,7 +148,7 @@
                             </td>
                             <td>
                                 <span class="badge bg-light text-dark font-mono border">
-                                    {{ number_format((float)$mem, 1) }}%
+                                    {{ number_format((float)$memMb, 1) }} MB
                                 </span>
                             </td>
                             <td class="font-mono text-primary small" style="max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ $cmd }}">
@@ -178,7 +185,7 @@
 
     <!-- PANEL LATERAL -->
     <div class="col-12 col-xl-4">
-        <!-- RENICE -->
+        <!-- FORMULARIO RENICE -->
         <div class="card custom-card mb-4">
             <div class="card-header bg-white border-bottom py-3 px-4">
                 <h6 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-gauge text-warning me-2"></i>Ajustar Prioridad (RENICE)</h6>
@@ -191,14 +198,17 @@
                         <label class="form-label small fw-semibold">Proceso App Objetivo</label>
                         <select name="pid" class="form-select font-mono" required>
                             <option value="">Seleccionar PID...</option>
-                            @foreach($whitelistedPids as $wPid)
+                            @foreach($whitelistedPidsArr as $wPid)
                                 <option value="{{ $wPid }}">PID {{ $wPid }}</option>
                             @endforeach
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label small fw-semibold">Valor Nice (-20 a 19)</label>
-                        <input type="number" name="nice" class="form-control font-mono" min="-20" max="19" placeholder="Ej: 5" required>
+                        <label class="form-label small fw-semibold">Valor Nice (0 a 19)</label>
+                        <input type="number" name="nice" class="form-control font-mono" min="0" max="19" placeholder="Ej: 5" required>
+                        <span class="text-muted d-block mt-1" style="font-size: 0.75rem;">
+                            Valores de 0 a 19 disminuyen la prioridad de CPU del proceso (requerido en hosting compartido sin root).
+                        </span>
                     </div>
                     <button type="submit" class="btn btn-warning w-100 font-mono fw-semibold text-dark">
                         <i class="fa-solid fa-sliders me-1"></i> Aplicar RENICE
@@ -210,7 +220,7 @@
             </div>
         </div>
 
-        <!-- SPAWN -->
+        <!-- FORMULARIO SPAWN -->
         <div class="card custom-card">
             <div class="card-header bg-white border-bottom py-3 px-4">
                 <h6 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-plus text-success me-2"></i>Iniciar Proceso (SPAWN)</h6>

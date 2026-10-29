@@ -21,7 +21,7 @@ class ProcessController extends Controller
     {
         $processes = $this->processService->getProcessList();
 
-        // Filtro de búsqueda
+        // 1. Filtro de búsqueda
         $search = strtolower(trim($request->input('search', '')));
         if (!empty($search)) {
             $processes = array_filter($processes, function ($proc) use ($search) {
@@ -38,7 +38,7 @@ class ProcessController extends Controller
         $summary = $this->processService->getStateSummary($processes);
         $whitelistedPids = TestProcess::pluck('pid')->toArray();
 
-        // Carga directa de logs sin requerir relaciones en el Modelo
+        // Carga segura de logs sin dependencias de relaciones
         $spawnLogs = Log::where('action', 'SPAWN')
             ->get()
             ->keyBy('target_process_pid');
@@ -54,7 +54,10 @@ class ProcessController extends Controller
         if ($seconds <= 0) $seconds = 300;
 
         $escapedSeconds = escapeshellarg($seconds);
-        $pid = (int) trim(shell_exec("sleep {$escapedSeconds} > /dev/null 2>&1 & echo $!"));
+        
+        // Uso de nohup para desvincular el subproceso de PHP y evitar bloqueos en el navegador
+        exec("nohup sleep {$escapedSeconds} > /dev/null 2>&1 & echo $!", $output);
+        $pid = isset($output[0]) ? (int) trim($output[0]) : 0;
 
         if ($pid > 0) {
             $user = auth()->user();
@@ -73,7 +76,7 @@ class ProcessController extends Controller
                 'result' => "Proceso iniciado por {$userName} ({$userRole}) con PID {$pid}",
             ]);
 
-            return back()->with('success', "Proceso de prueba iniciado por {$userName} ({$userRole}) con PID: {$pid}");
+            return back()->with('success', "Proceso de prueba iniciado en segundo plano con PID: {$pid}");
         }
 
         return back()->with('error', 'Error al intentar iniciar el proceso de prueba.');
@@ -124,22 +127,26 @@ class ProcessController extends Controller
 
         $request->validate([
             'pid' => 'required|integer',
-            'nice' => 'required|integer|between:-20,19',
+            'nice' => 'required|integer|between:0,19',
         ]);
 
         $pid = (int) $request->input('pid');
         $nice = (int) $request->input('nice');
 
+        if ($nice < 0) {
+            return back()->with('error', "Acción denegada: En hosting compartido solo se permiten valores Nice entre 0 y 19.");
+        }
+
         $testProc = TestProcess::where('pid', $pid)->first();
 
         if (!$testProc) {
-            return back()->with('error', "Acción denegada. El proceso {$pid} no está en la lista blanca.");
+            return back()->with('error', "Acción denegada. El proceso {$pid} no pertenece a la lista blanca.");
         }
 
         $escapedPid = escapeshellarg($pid);
         $escapedNice = escapeshellarg($nice);
 
-        exec("renice -n {$escapedNice} -p {$escapedPid}", $output, $returnCode);
+        exec("renice -n {$escapedNice} -p {$escapedPid} 2>&1", $output, $returnCode);
 
         if ($returnCode === 0) {
             $userName = auth()->user()->name ?? 'Usuario';
@@ -154,6 +161,7 @@ class ProcessController extends Controller
             return back()->with('success', "Prioridad del PID {$pid} modificada a {$nice}.");
         }
 
-        return back()->with('error', "No se pudo modificar la prioridad del PID {$pid}.");
+        $errorMsg = isset($output[0]) ? implode(' ', $output) : "Error al cambiar prioridad.";
+        return back()->with('error', "No se pudo modificar la prioridad del PID {$pid}: {$errorMsg}");
     }
 }
