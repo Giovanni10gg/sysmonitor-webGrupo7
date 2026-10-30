@@ -1,6 +1,3 @@
-<<<<<<< HEAD
-<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Sysmonitor</title><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"></head><body><div class="container mt-4">@yield("content")</div></body></html
-=======
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -68,14 +65,44 @@
             </button>
 
             <div class="collapse navbar-collapse" id="topNavbarMenu">
-                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                    <li class="nav-item"><a class="nav-link {{ request()->is('/') ? 'active' : '' }}" href="/"><i class="fa-solid fa-chart-pie me-1"></i> Dashboard</a></li>
-                    <li class="nav-item"><a class="nav-link {{ request()->is('processes*') ? 'active' : '' }}" href="/processes"><i class="fa-solid fa-microchip me-1"></i> Procesos</a></li>
-                    <li class="nav-item"><a class="nav-link {{ request()->is('hardware*') ? 'active' : '' }}" href="/hardware"><i class="fa-solid fa-gauge-high me-1"></i> CPU</a></li>
-                    <li class="nav-item"><a class="nav-link {{ request()->is('scheduler*') ? 'active' : '' }}" href="/scheduler"><i class="fa-solid fa-clock me-1"></i> Scheduler</a></li>
-                    <li class="nav-item"><a class="nav-link {{ request()->is('deadlocks*') ? 'active' : '' }}" href="/deadlocks"><i class="fa-solid fa-lock me-1"></i> Deadlocks</a></li>
-                    <li class="nav-item"><a class="nav-link {{ request()->is('audit*') ? 'active' : '' }}" href="/audit"><i class="fa-solid fa-list-check me-1"></i> Bitácora</a></li>
-                </ul>
+               <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+    <li class="nav-item">
+        <a class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="/">
+            <i class="fa-solid fa-chart-pie me-1"></i> Dashboard
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {{ request()->routeIs('processes.*') ? 'active' : '' }}" href="/processes">
+            <i class="fa-solid fa-microchip me-1"></i> Procesos
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {{ request()->routeIs('hardware.*') ? 'active' : '' }}" href="/hardware">
+            <i class="fa-solid fa-gauge-high me-1"></i> CPU
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {{ request()->routeIs('scheduler.*') ? 'active' : '' }}" href="/scheduler">
+            <i class="fa-solid fa-clock me-1"></i> Scheduler
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {{ request()->routeIs('deadlocks.*') ? 'active' : '' }}" href="/deadlocks">
+            <i class="fa-solid fa-lock me-1"></i> Deadlocks
+        </a>
+    </li>
+    <!-- MÓDULO 5 ACTIVADO -->
+    <li class="nav-item">
+        <a class="nav-link {{ request()->routeIs('memory.*') ? 'active' : '' }}" href="{{ route('memory.index') }}">
+            <i class="fa-solid fa-hard-drive me-1"></i> Almacenamiento / Usuarios
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {{ request()->routeIs('audit.*') ? 'active' : '' }}" href="/audit">
+            <i class="fa-solid fa-list-check me-1"></i> Bitácora
+        </a>
+    </li>
+</ul>
 
                 @auth
                 <div class="d-flex align-items-center gap-3 p-2 rounded-3 ms-auto">
@@ -129,4 +156,3 @@
     @stack('scripts')
 </body>
 </html>
->>>>>>> origin/main
