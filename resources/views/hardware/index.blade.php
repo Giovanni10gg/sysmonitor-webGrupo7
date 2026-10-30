@@ -1,83 +1,189 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="refresh" content="5"> <!-- Autorrefresco cada 5 segundos -->
-    <title>Módulo 2: CPU y Memoria - SysMonitor</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; background: #f4f6f9; color: #333; }
-        .nav { margin-bottom: 20px; }
-        .nav a { text-decoration: none; color: #007bff; font-weight: bold; margin-right: 15px; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
-        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .progress-bar-bg { background: #e9ecef; border-radius: 4px; height: 20px; width: 100%; margin: 10px 0; overflow: hidden; }
-        .progress-bar-fill { height: 100%; background: #28a745; transition: width 0.3s; text-align: center; color: white; font-size: 12px; line-height: 20px; }
-        .progress-warning { background: #ffc107; color: #000; }
-        .progress-danger { background: #dc3545; }
-        .metric-label { font-weight: bold; }
-    </style>
-</head>
-<body>
+@extends('layouts.app')
 
-    <div class="nav">
-        <a href="{{ route('processes.index') }}">← Ir a Módulo 1 (Procesos)</a>
-        <a href="{{ route('hardware.index') }}">🔄 Recargar Métricas</a>
-    </div>
+@section('title', 'Módulo 2 - CPU & Hardware')
+@section('module_tag', 'Módulo 02')
+@section('module_icon', 'fa-gauge-high')
+@section('module_description', 'Métricas del procesador, uso de memoria RAM y rendimiento del servidor')
 
-    <h1>SysMonitor - Módulo 2: CPU y Memoria</h1>
-    <p><i>La página se actualiza automáticamente cada 5 segundos.</i></p>
+@section('content')
 
-    <div class="grid">
-        <!-- Tarjeta de CPU -->
-        <div class="card">
-            <h3>Procesador (CPU)</h3>
-            <p><span class="metric-label">Modelo:</span> {{ $cpuInfo['model'] }}</p>
-            <p><span class="metric-label">Núcleos:</span> {{ $cpuInfo['cores'] }}</p>
-            <p><span class="metric-label">Uptime:</span> {{ $cpuInfo['uptime'] }}</p>
-            <hr>
-            <p><span class="metric-label">Uso de CPU:</span> {{ $cpuUsage }}%</p>
-            <div class="progress-bar-bg">
-                <div class="progress-bar-fill {{ $cpuUsage > 80 ? 'progress-danger' : ($cpuUsage > 50 ? 'progress-warning' : '') }}" 
-                     style="width: {{ $cpuUsage }}%;">
-                    {{ $cpuUsage }}%
+@php
+    $ramPct = $memoryInfo['ram']['used_pct'] ?? 0;
+    $ramUsed = $memoryInfo['ram']['used_mb'] ?? 0;
+    $ramTotal = $memoryInfo['ram']['total_mb'] ?? 0;
+
+    $swapPct = $memoryInfo['swap']['used_pct'] ?? 0;
+    $swapUsed = $memoryInfo['swap']['used_mb'] ?? 0;
+    $swapTotal = $memoryInfo['swap']['total_mb'] ?? 0;
+@endphp
+
+<!-- TARJETAS DE MÉTRICAS RÁPIDAS (KPIs) -->
+<div class="row g-3 mb-4">
+    <!-- CPU -->
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card custom-card p-3">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="text-muted small fw-semibold text-uppercase">Carga de CPU</span>
+                    <h2 class="fw-bold mb-0 mt-1 font-mono text-dark">
+                        {{ number_format($cpuUsage ?? 0, 1) }}%
+                    </h2>
+                </div>
+                <div class="bg-primary bg-opacity-10 text-primary rounded-3 p-3">
+                    <i class="fa-solid fa-microchip fa-lg"></i>
                 </div>
             </div>
-        </div>
-
-        <!-- Tarjeta de Memoria RAM -->
-        <div class="card">
-            <h3>Memoria RAM</h3>
-            <p><span class="metric-label">Total:</span> {{ $memoryInfo['ram']['total_mb'] }} MB</p>
-            <p><span class="metric-label">En uso:</span> {{ $memoryInfo['ram']['used_mb'] }} MB ({{ $memoryInfo['ram']['used_pct'] }}%)</p>
-            <p><span class="metric-label">Libre:</span> {{ $memoryInfo['ram']['free_mb'] }} MB</p>
-            <p><span class="metric-label">En Caché:</span> {{ $memoryInfo['ram']['cached_mb'] }} MB</p>
-            
-            <div class="progress-bar-bg">
-                <div class="progress-bar-fill {{ $memoryInfo['ram']['used_pct'] > 85 ? 'progress-danger' : ($memoryInfo['ram']['used_pct'] > 60 ? 'progress-warning' : '') }}" 
-                     style="width: {{ $memoryInfo['ram']['used_pct'] }}%;">
-                    {{ $memoryInfo['ram']['used_pct'] }}%
-                </div>
-            </div>
-        </div>
-
-        <!-- Tarjeta de Memoria SWAP y Carga -->
-        <div class="card">
-            <h3>Memoria SWAP y Carga</h3>
-            <p><span class="metric-label">SWAP Total:</span> {{ $memoryInfo['swap']['total_mb'] }} MB</p>
-            <p><span class="metric-label">SWAP Usada:</span> {{ $memoryInfo['swap']['used_mb'] }} MB ({{ $memoryInfo['swap']['used_pct'] }}%)</p>
-            
-            <div class="progress-bar-bg">
-                <div class="progress-bar-fill {{ $memoryInfo['swap']['used_pct'] > 50 ? 'progress-danger' : '' }}" 
-                     style="width: {{ $memoryInfo['swap']['used_pct'] }}%;">
-                    {{ $memoryInfo['swap']['used_pct'] }}%
-                </div>
-            </div>
-
-            <hr>
-            <p><span class="metric-label">Promedio de Carga (1m, 5m, 15m):</span></p>
-            <code>{{ $memoryInfo['load_avg'] }}</code>
         </div>
     </div>
 
-</body>
-</html>
+    <!-- RAM -->
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card custom-card p-3">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="text-muted small fw-semibold text-uppercase">Uso de Memoria</span>
+                    <h2 class="fw-bold mb-0 mt-1 font-mono text-dark">
+                        {{ number_format($ramPct, 1) }}%
+                    </h2>
+                </div>
+                <div class="bg-info bg-opacity-10 text-info rounded-3 p-3">
+                    <i class="fa-solid fa-memory fa-lg"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tiempo Activo -->
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card custom-card p-3">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="text-muted small fw-semibold text-uppercase">Tiempo Activo</span>
+                    <h2 class="fw-bold mb-0 mt-1 font-mono text-dark" style="font-size: 1.05rem;">
+                        {{ $cpuInfo['uptime'] ?? 'N/A' }}
+                    </h2>
+                </div>
+                <div class="bg-success bg-opacity-10 text-success rounded-3 p-3">
+                    <i class="fa-solid fa-clock fa-lg"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Kernel / SO -->
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card custom-card p-3">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="text-muted small fw-semibold text-uppercase">Sistema Operativo</span>
+                    <h2 class="fw-bold mb-0 mt-1 font-mono text-dark" style="font-size: 1.1rem;">
+                        Linux x86_64
+                    </h2>
+                </div>
+                <div class="bg-warning bg-opacity-10 text-warning rounded-3 p-3">
+                    <i class="fa-brands fa-linux fa-lg"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- SECCIÓN PRINCIPAL DE DETALLES -->
+<div class="row g-4">
+    <!-- DETALLES DE RECURSOS -->
+    <div class="col-12 col-xl-8">
+        <!-- Memoria RAM -->
+        <div class="card custom-card mb-4">
+            <div class="card-header bg-white border-bottom py-3 px-4">
+                <h5 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-memory text-primary me-2"></i>Memoria Principal (RAM) y Swap</h5>
+            </div>
+            <div class="card-body p-4">
+                <!-- RAM -->
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="fw-semibold small">Uso de Memoria RAM</span>
+                        <span class="font-mono small fw-bold">
+                            {{ number_format($ramUsed, 1) }} MB / {{ number_format($ramTotal, 1) }} MB
+                        </span>
+                    </div>
+                    <div class="progress" style="height: 12px; border-radius: 6px;">
+                        <div class="progress-bar bg-primary" role="progressbar" 
+                             style="width: {{ $ramPct }}%"></div>
+                    </div>
+                </div>
+
+                <!-- SWAP -->
+                <div>
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="fw-semibold small">Memoria Swap</span>
+                        <span class="font-mono small fw-bold">
+                            {{ number_format($swapUsed, 1) }} MB / {{ number_format($swapTotal, 1) }} MB
+                        </span>
+                    </div>
+                    <div class="progress" style="height: 12px; border-radius: 6px;">
+                        <div class="progress-bar bg-warning" role="progressbar" 
+                             style="width: {{ $swapPct }}%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Especificaciones CPU -->
+        <div class="card custom-card">
+            <div class="card-header bg-white border-bottom py-3 px-4">
+                <h5 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-microchip text-primary me-2"></i>Especificaciones del Procesador</h5>
+            </div>
+            <div class="card-body p-4">
+                <div class="table-responsive">
+                    <table class="table table-custom mb-0">
+                        <tbody>
+                            <tr>
+                                <th style="width: 30%;">Modelo CPU</th>
+                                <td class="font-mono text-dark fw-semibold">{{ $cpuInfo['model'] ?? 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Núcleos / Cores</th>
+                                <td class="font-mono"><span class="badge bg-dark">{{ $cpuInfo['cores'] ?? 1 }} vCPU</span></td>
+                            </tr>
+                            <tr>
+                                <th>Carga Media (Load Avg)</th>
+                                <td class="font-mono text-primary">{{ $memoryInfo['load_avg'] ?? 'N/A' }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- INFORMACIÓN DEL SERVIDOR -->
+    <div class="col-12 col-xl-4">
+        <div class="card custom-card">
+            <div class="card-header bg-white border-bottom py-3 px-4">
+                <h6 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-sliders text-info me-2"></i>Servidor & VPS</h6>
+            </div>
+            <div class="card-body p-4">
+                <ul class="list-group list-group-flush small">
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
+                        <span class="text-muted">Hosting</span>
+                        <span class="fw-bold font-mono text-dark">Alwaysdata PaaS</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
+                        <span class="text-muted">Versión PHP</span>
+                        <span class="badge bg-primary font-mono">PHP {{ phpversion() }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
+                        <span class="text-muted">Motor de BD</span>
+                        <span class="badge bg-secondary font-mono">SQLite 3</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
+                        <span class="text-muted">Zona Horaria</span>
+                        <span class="font-mono text-dark">{{ config('app.timezone') }}</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+@endsection

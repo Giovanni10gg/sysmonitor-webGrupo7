@@ -167,24 +167,26 @@
                 </div>
             </div>
 
-            <!-- Módulo 6: En desarrollo -->
-            <div class="col-md-6 col-lg-4">
-                <div class="card card-module h-100 shadow-sm bg-light text-muted">
-                    <div class="card-body d-flex flex-column">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <span class="badge bg-warning bg-opacity-20 text-dark border border-warning-subtle badge-status">
-                                <i class="bi bi-clock-history me-1"></i>En Desarrollo
-                            </span>
-                            <span class="text-muted fw-bold">Módulo 06</span>
-                        </div>
-                        <h5 class="card-title fw-bold text-secondary">Módulo 6</h5>
-                        <p class="card-text text-muted flex-grow-1">
-                            Módulo en fase de preparación e integración por el equipo de desarrollo.
-                        </p>
-                        <button class="btn btn-outline-secondary w-100 mt-3" disabled>Próximamente</button>
-                    </div>
-                </div>
+            <!-- Módulo 6: Integración y Bitácora -->
+<div class="col-md-6 col-lg-4">
+    <div class="card card-module h-100 shadow-sm">
+        <div class="card-body d-flex flex-column">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <span class="badge bg-success bg-opacity-10 text-success border border-success-subtle badge-status">
+                    <i class="bi bi-check-circle-fill me-1"></i>Activo
+                </span>
+                <span class="text-muted fw-bold">Módulo 06</span>
             </div>
+            <h5 class="card-title fw-bold text-dark">Integración y Bitácora</h5>
+            <p class="card-text text-secondary flex-grow-1">
+                Roles de usuario, control de acceso y bitácora de auditoría de acciones administrativas.
+            </p>
+            <a href="/audit" class="btn btn-primary w-100 mt-3">
+                <i class="bi bi-journal-text me-1"></i> Abrir Bitácora
+            </a>
+        </div>
+    </div>
+</div>
 
         </div>
     </main>

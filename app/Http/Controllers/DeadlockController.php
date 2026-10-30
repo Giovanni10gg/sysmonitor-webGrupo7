@@ -7,25 +7,21 @@ use App\Services\CycleDetectionService;
 use App\Services\BankerService;
 use App\Services\ResourceGraphService;
 use Illuminate\Http\Request;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Validator;
 
 class DeadlockController extends Controller
 {
-    // Mostrar la pantalla principal de M4
     public function index()
     {
         return view('deadlocks.index');
     }
 
-    // Recibir y validar las matrices
-public function validateMatrices(
-    Request $request,
-    BankerService $banker,
-    ResourceGraphService $graphService
-)
-    {
-
-        $data = $request->validate([
+    public function validateMatrices(
+        Request $request,
+        BankerService $banker,
+        ResourceGraphService $graphService
+    ) {
+        $validator = Validator::make($request->all(), [
             'allocation' => ['required', 'array', 'min:1', 'max:10'],
             'allocation.*' => ['required', 'array', 'min:1', 'max:6'],
             'allocation.*.*' => ['required', 'integer', 'min:0'],
@@ -38,109 +34,87 @@ public function validateMatrices(
             'available.*' => ['required', 'integer', 'min:0'],
         ]);
 
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error de validación en las matrices ingresadas.',
+                'errors' => $validator->errors()
+            ], 422);
+        }
 
-        $allocation = $data['allocation'];
-        $maximum = $data['maximum'];
-        $available = $data['available'];
+        $allocation = $request->input('allocation');
+        $maximum = $request->input('maximum');
+        $available = $request->input('available');
 
         $processes = count($allocation);
         $resources = count($available);
 
-        // Verificar indices consecutivos
-        if (
-            !array_is_list($allocation) ||
-            !array_is_list($maximum) ||
-            !array_is_list($available)
-        ) {
-            throw ValidationException::withMessages([
-                'allocation' => 'Las matrices deben tener indices consecutivos.',
-            ]);
-        }
-
         if ($processes !== count($maximum)) {
-            throw ValidationException::withMessages([
-                'maximum' => 'La cantidad de procesos no coincide.',
-            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'La cantidad de procesos en Asignación y Máximo no coincide.'
+            ], 422);
         }
 
         for ($i = 0; $i < $processes; $i++) {
-
             if (
                 !isset($maximum[$i]) ||
-                !array_is_list($allocation[$i]) ||
-                !array_is_list($maximum[$i]) ||
                 count($allocation[$i]) !== $resources ||
                 count($maximum[$i]) !== $resources
             ) {
-                throw ValidationException::withMessages([
-                    'allocation' => 'Las dimensiones de las matrices no coinciden.',
-                ]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Las dimensiones de las matrices no coinciden con las dimensiones declaradas.'
+                ], 422);
             }
 
             for ($j = 0; $j < $resources; $j++) {
-
                 if ($allocation[$i][$j] > $maximum[$i][$j]) {
-                    throw ValidationException::withMessages([
-                        'allocation' => 'La asignacion no puede superar el maximo.',
-                    ]);
+                    return response()->json([
+                        'success' => false,
+                        'message' => "La asignación no puede superar el máximo en P{$i} - R{$j} (Asignación: {$allocation[$i][$j]} > Máximo: {$maximum[$i][$j]})."
+                    ], 422);
                 }
             }
         }
 
-// Calcular la matriz Necesidad
-// Necesidad = Maximo - Asignacion
+        // Calcular la matriz Necesidad (Need = Maximo - Asignacion)
+        $need = [];
+        for ($i = 0; $i < $processes; $i++) {
+            $fila = [];
+            for ($j = 0; $j < $resources; $j++) {
+                $fila[] = $maximum[$i][$j] - $allocation[$i][$j];
+            }
+            $need[] = $fila;
+        }
 
-$need = [];
+        // Ejecutar el algoritmo del banquero
+        $safety = $banker->checkSafety($allocation, $need, $available);
 
-for ($i = 0; $i < $processes; $i++) {
+        // Construir el grafo de asignacion
+        $graph = $graphService->build($allocation, $available);
 
-    $fila = [];
-
-    for ($j = 0; $j < $resources; $j++) {
-
-        $necesidad = $maximum[$i][$j] - $allocation[$i][$j];
-
-        $fila[] = $necesidad;
+        return response()->json([
+            'success' => true,
+            'message' => 'Matrices validadas correctamente',
+            'processes' => $processes,
+            'resources' => $resources,
+            'need' => $need,
+            'safe' => $safety['safe'],
+            'sequence' => $safety['sequence'],
+            'steps' => $safety['steps'],
+            'pending' => $safety['pending'],
+            'work_final' => $safety['work_final'],
+            'graph' => $graph,
+        ]);
     }
 
-    $need[] = $fila;
-}
-// Ejecutar el algoritmo del banquero
-$safety = $banker->checkSafety(
-    $allocation,
-    $need,
-    $available
-);
-// Construir el grafo de asignacion
-$graph = $graphService->build(
-    $allocation,
-    $available
-);
- return response()->json([
-    'success' => true,
-    'message' => 'Matrices validadas correctamente',
-    'processes' => $processes,
-    'resources' => $resources,
-    'need' => $need,
-'safe' => $safety['safe'],
-'sequence' => $safety['sequence'],
-'steps' => $safety['steps'],
-'pending' => $safety['pending'],
-'work_final' => $safety['work_final'],
-'graph' => $graph,
-]);
-    }
-
-    // Evaluar una solicitud de recursos
     public function requestResources(
-    Request $request,
-    BankerService $banker,
-    ResourceGraphService $graphService
-)
- {
-        // Validar los datos recibidos
-
-        $data = $request->validate([
+        Request $request,
+        BankerService $banker,
+        ResourceGraphService $graphService
+    ) {
+        $validator = Validator::make($request->all(), [
             'allocation' => ['required', 'array', 'min:1', 'max:10'],
             'allocation.*' => ['required', 'array', 'min:1', 'max:6'],
             'allocation.*.*' => ['required', 'integer', 'min:0'],
@@ -158,100 +132,65 @@ $graph = $graphService->build(
             'requested.*' => ['required', 'integer', 'min:0'],
         ]);
 
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Datos de solicitud inválidos.',
+                'errors' => $validator->errors()
+            ], 422);
+        }
 
-        $allocation = $data['allocation'];
-        $maximum = $data['maximum'];
-        $available = $data['available'];
-        $process = $data['process'];
-        $requested = $data['requested'];
+        $allocation = $request->input('allocation');
+        $maximum = $request->input('maximum');
+        $available = $request->input('available');
+        $process = $request->input('process');
+        $requested = $request->input('requested');
 
         $processes = count($allocation);
         $resources = count($available);
 
-        // Verificar dimensiones y proceso seleccionado
-        if (
-            !array_is_list($allocation) ||
-            !array_is_list($maximum) ||
-            !array_is_list($available) ||
-            !array_is_list($requested) ||
-            count($maximum) !== $processes ||
-            count($requested) !== $resources ||
-            $process >= $processes
-        ) {
-            throw ValidationException::withMessages([
-                'request' => 'Proceso o dimensiones incorrectas.',
-            ]);
+        if ($process >= $processes || count($requested) !== $resources) {
+            return response()->json([
+                'success' => false,
+                'message' => 'El proceso seleccionado o las dimensiones del vector son incorrectos.'
+            ], 422);
         }
 
-        // Calcular la matriz Necesidad
         $need = [];
-
         for ($i = 0; $i < $processes; $i++) {
-
-            if (
-                !array_is_list($allocation[$i]) ||
-                !array_is_list($maximum[$i]) ||
-                count($allocation[$i]) !== $resources ||
-                count($maximum[$i]) !== $resources
-            ) {
-                throw ValidationException::withMessages([
-                    'allocation' => 'Las dimensiones no coinciden.',
-                ]);
-            }
-
             $row = [];
-
             for ($j = 0; $j < $resources; $j++) {
-
                 if ($allocation[$i][$j] > $maximum[$i][$j]) {
-                    throw ValidationException::withMessages([
-                        'allocation' => 'La asignacion supera el maximo.',
-                    ]);
+                    return response()->json([
+                        'success' => false,
+                        'message' => "La asignación supera el máximo en P{$i} - R{$j}."
+                    ], 422);
                 }
-
                 $row[] = $maximum[$i][$j] - $allocation[$i][$j];
             }
-
             $need[] = $row;
         }
 
-        // Evaluar la solicitud con el algoritmo del banquero
-        $result = $banker->evaluateRequest(
-            $allocation,
-            $need,
-            $available,
-            $process,
-            $requested
-        );
-// Construir el grafo incluyendo la solicitud
-$graph = $graphService->build(
-    $allocation,
-    $available,
-    $process,
-    $requested
-);
+        $result = $banker->evaluateRequest($allocation, $need, $available, $process, $requested);
+        $graph = $graphService->build($allocation, $available, $process, $requested);
 
-        // Enviar el resultado al navegador
         return response()->json([
             'success' => true,
             'granted' => $result['granted'],
             'reason' => $result['reason'],
-            'sequence' => $result['sequence'],
-            'available_after' => $result['available_after'],
-	    'graph' => $graph,
+            'sequence' => $result['sequence'] ?? [],
+            'available_after' => $result['available_after'] ?? $available,
+            'graph' => $graph,
         ]);
     }
 
-    // Analizar ciclos con solicitudes simultaneas
-public function analyzeCycles(
-    Request $request,
-    ResourceGraphService $graphService,
-    CycleDetectionService $cycleService,
-    RecoveryService $recoveryService
-)
- {
-        // Validar los datos recibidos
-        $data = $request->validate([
+    public function analyzeCycles(
+        Request $request,
+        ResourceGraphService $graphService,
+        CycleDetectionService $cycleService,
+        RecoveryService $recoveryService
+    ) {
+        $validator = Validator::make($request->all(), [
             'allocation' => ['required', 'array', 'min:1', 'max:10'],
             'allocation.*' => ['required', 'array', 'min:1', 'max:6'],
             'allocation.*.*' => ['required', 'integer', 'min:0'],
@@ -268,91 +207,48 @@ public function analyzeCycles(
             'requests.*.*' => ['required', 'integer', 'min:0'],
         ]);
 
-        $allocation = $data['allocation'];
-        $maximum = $data['maximum'];
-        $available = $data['available'];
-        $requests = $data['requests'];
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Matriz de solicitudes pendientes inválida.',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $allocation = $request->input('allocation');
+        $maximum = $request->input('maximum');
+        $available = $request->input('available');
+        $requests = $request->input('requests');
 
         $processes = count($allocation);
         $resources = count($available);
 
-        // Validar cantidad de procesos y orden de las filas
-        if (
-            !array_is_list($allocation) ||
-            !array_is_list($maximum) ||
-            !array_is_list($available) ||
-            !array_is_list($requests) ||
-            count($maximum) !== $processes ||
-            count($requests) !== $processes
-        ) {
-            throw ValidationException::withMessages([
-                'requests' => 'Las dimensiones de las matrices no coinciden.',
-            ]);
-        }
-
-        // Verificar todas las filas
         for ($i = 0; $i < $processes; $i++) {
-
-            if (
-                !array_is_list($allocation[$i]) ||
-                !array_is_list($maximum[$i]) ||
-                !array_is_list($requests[$i]) ||
-                count($allocation[$i]) !== $resources ||
-                count($maximum[$i]) !== $resources ||
-                count($requests[$i]) !== $resources
-            ) {
-                throw ValidationException::withMessages([
-                    'requests' => 'Las dimensiones de las filas no coinciden.',
-                ]);
-            }
-
             for ($j = 0; $j < $resources; $j++) {
-
-                // La asignacion no debe superar el maximo
                 if ($allocation[$i][$j] > $maximum[$i][$j]) {
-                    throw ValidationException::withMessages([
-                        'allocation' => 'La asignacion supera el maximo.',
-                    ]);
+                    return response()->json([
+                        'success' => false,
+                        'message' => "La asignación supera el máximo en P{$i} - R{$j}."
+                    ], 422);
                 }
 
-                // Calcular necesidad del proceso
                 $need = $maximum[$i][$j] - $allocation[$i][$j];
-
-                // Cada solicitud debe respetar la necesidad
                 if ($requests[$i][$j] > $need) {
-                    throw ValidationException::withMessages([
-                        'requests' => 'Una solicitud supera la necesidad del proceso.',
-                    ]);
+                    return response()->json([
+                        'success' => false,
+                        'message' => "La solicitud en P{$i} - R{$j} ({$requests[$i][$j]}) supera la necesidad ({$need})."
+                    ], 422);
                 }
             }
         }
 
-        // Construir el grafo con solicitudes simultaneas
-        $graph = $graphService->buildWithRequests(
-            $allocation,
-            $available,
-            $requests
-        );
-
-        // Buscar un ciclo mediante DFS
+        $graph = $graphService->buildWithRequests($allocation, $available, $requests);
         $result = $cycleService->detect($graph);
+        $recovery = $recoveryService->analyze($allocation, $available, $requests, $result['cycle']);
 
-// Analizar una posible recuperacion simulada
-$recovery = $recoveryService->analyze(
-    $allocation,
-    $available,
-    $requests,
-    $result['cycle']
-);
-
-        // Interpretar el resultado
-        if ($result['has_cycle']) {
-            $message = 'Se detecto un ciclo de dependencias. '
-                . 'Con recursos de multiples instancias, '
-                . 'un ciclo no confirma por si solo un interbloqueo.';
-        } else {
-            $message = 'No se detectaron ciclos en el grafo.';
-        }
+        $message = $result['has_cycle']
+            ? 'Se detectó un ciclo de dependencias en el grafo.'
+            : 'No se detectaron ciclos en el grafo.';
 
         return response()->json([
             'success' => true,
@@ -363,5 +259,4 @@ $recovery = $recoveryService->analyze(
             'recovery' => $recovery,
         ]);
     }
-
 }
