@@ -38,7 +38,7 @@
         .navbar-slate .nav-link { color: #94a3b8; font-weight: 500; padding: 0.5rem 0.9rem; border-radius: 6px; }
         .navbar-slate .nav-link:hover { color: #ffffff; background-color: var(--slate-header-hover); }
         .navbar-slate .nav-link.active { color: #ffffff; background-color: #3b82f6; }
-        
+
         .custom-card {
             background-color: var(--card-bg);
             border: 1px solid var(--border-color);
@@ -49,7 +49,7 @@
         .icon-shape { width: 48px; height: 48px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
         .badge-role-admin { background-color: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
         .badge-role-observer { background-color: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
-        
+
         .badge-success-soft { background-color: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
         .badge-danger-soft { background-color: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
         .badge-warning-soft { background-color: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
@@ -59,7 +59,7 @@
             text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; padding: 12px 16px;
         }
         .table-custom td { padding: 14px 16px; vertical-align: middle; border-bottom: 1px solid #f1f5f9; font-size: 0.875rem; }
-        
+
         .json-box {
             background-color: #0f172a; color: #38bdf8; border-radius: 8px; padding: 16px;
             font-family: 'JetBrains Mono', monospace; font-size: 0.825rem; max-height: 350px; overflow-y: auto;
@@ -69,7 +69,7 @@
 </head>
 <body>
 
-    <!-- 1. TOP NAVBAR -->
+    <!-- TOP NAVBAR -->
     <nav class="navbar navbar-expand-lg navbar-dark navbar-slate sticky-top py-2">
         <div class="container-fluid px-lg-4">
             <a class="navbar-brand fw-bold d-flex align-items-center me-4" href="/">
@@ -127,7 +127,7 @@
     <!-- MAIN CONTAINER -->
     <main class="container-fluid px-lg-4 py-4">
 
-        <!-- 2. TOP KPI CARDS -->
+        <!-- TOP KPI CARDS -->
         <div class="row g-3 mb-4">
             <div class="col-12 col-sm-6 col-xl-3">
                 <div class="card custom-card p-3">
@@ -247,7 +247,7 @@
                     </div>
 
                     <div class="card-footer bg-white border-top py-3 px-4">
-                        {{ $logs->links() }}
+                        {{ $logs->links('pagination::bootstrap-5') }}
                     </div>
                 </div>
             </div>
