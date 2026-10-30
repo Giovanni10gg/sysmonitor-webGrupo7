@@ -1,5 +1,5 @@
 <?php
-
+use App\Http\Controllers\StorageController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProcessController;
 use App\Http\Controllers\HardwareController;
@@ -44,3 +44,8 @@ Route::get('/scheduler/historial', [SchedulerController::class, 'historial'])
     ->name('scheduler.historial');
 Route::get('/scheduler/comparativa', [SchedulerController::class, 'comparativa'])
     ->name('scheduler.comparativa');
+
+Route::get('/almacenamiento', function() { return 'Modulo Almacenamiento OK'; });
+Route::get('/storage', [App\Http\Controllers\StorageController::class, 'index']);
+Route::get('/public/storage', [App\Http\Controllers\StorageController::class, 'index']);
+Route::get('/storage', function () { return view('storage.index'); });
