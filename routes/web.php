@@ -1,4 +1,5 @@
 <?php
+use App\Http\Controllers\MemoryController;
 use App\Http\Controllers\StorageController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProcessController;
@@ -90,7 +91,9 @@ Route::get('/scheduler/historial', [SchedulerController::class, 'historial'])
 Route::get('/scheduler/comparativa', [SchedulerController::class, 'comparativa'])
     ->name('scheduler.comparativa');
 
-Route::get('/almacenamiento', function() { return 'Modulo Almacenamiento OK'; });
-Route::get('/storage', [App\Http\Controllers\StorageController::class, 'index']);
+// Módulo 5 - Gestión de Memoria
+Route::get('/memory', [MemoryController::class, 'index'])->name('memory.index');
+
+// Rutas de Almacenamiento
+Route::get('/storage', [App\Http\Controllers\StorageController::class, 'index'])->name('storage.index');
 Route::get('/public/storage', [App\Http\Controllers\StorageController::class, 'index']);
-Route::get('/storage', function () { return view('storage.index'); });

@@ -148,24 +148,24 @@
     </div>
 </div>
 
-            <!-- Módulo 5: En desarrollo -->
-            <div class="col-md-6 col-lg-4">
-                <div class="card card-module h-100 shadow-sm bg-light text-muted">
-                    <div class="card-body d-flex flex-column">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <span class="badge bg-warning bg-opacity-20 text-dark border border-warning-subtle badge-status">
-                                <i class="bi bi-clock-history me-1"></i>En Desarrollo
-                            </span>
-                            <span class="text-muted fw-bold">Módulo 05</span>
-                        </div>
-                        <h5 class="card-title fw-bold text-secondary">Módulo 5</h5>
-                        <p class="card-text text-muted flex-grow-1">
-                            Módulo en fase de preparación e integración por el equipo de desarrollo.
-                        </p>
-                        <button class="btn btn-outline-secondary w-100 mt-3" disabled>Próximamente</button>
-                    </div>
-                </div>
-            </div>
+            <!-- MÓDULO 05: GESTIÓN DE MEMORIA -->
+<div class="col-12 col-md-6 col-xl-4">
+    <div class="card custom-card h-100 p-3">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-1 small">
+                <i class="fa-solid fa-circle-check me-1"></i> Activo
+            </span>
+            <span class="text-muted small font-mono">Módulo 05</span>
+        </div>
+        <h5 class="fw-bold text-dark mb-1">Gestión de Memoria</h5>
+        <p class="text-muted small mb-3">
+            Simulación de particionamiento dinámico, algoritmos de asignación (First-Fit, Best-Fit, Worst-Fit) y paginación.
+        </p>
+        <a href="{{ route('memory.index') }}" class="btn btn-primary w-100 font-mono fw-semibold mt-auto">
+            <i class="fa-solid fa-memory me-1"></i> Abrir Módulo
+        </a>
+    </div>
+</div>
 
             <!-- Módulo 6: Integración y Bitácora -->
 <div class="col-md-6 col-lg-4">
