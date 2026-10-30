@@ -90,6 +90,7 @@
                     <li class="nav-item"><a class="nav-link" href="/hardware"><i class="fa-solid fa-gauge-high me-1"></i> CPU</a></li>
                     <li class="nav-item"><a class="nav-link" href="/scheduler"><i class="fa-solid fa-clock me-1"></i> Scheduler</a></li>
                     <li class="nav-item"><a class="nav-link" href="/deadlocks"><i class="fa-solid fa-lock me-1"></i> Deadlocks</a></li>
+                    <li class="nav-item"><a class="nav-link {{ request()->routeIs('memory.*') ? 'active' : '' }}" href="{{ route('memory.index') }}"><i class="fa-solid fa-hard-drive me-1"></i> Almacenamiento</a></li>
                     <li class="nav-item"><a class="nav-link active" href="/audit"><i class="fa-solid fa-list-check me-1"></i> Bitácora</a></li>
                 </ul>
 
@@ -120,7 +121,12 @@
                 <span class="badge bg-dark font-mono"><i class="fa-solid fa-cube text-info me-1"></i> Módulo 6</span>
                 <span class="small fw-semibold text-secondary"><i class="fa-solid fa-database text-warning me-1"></i> SQLite Engine: <span class="text-dark font-mono">database.sqlite</span></span>
             </div>
-            <a href="/" class="btn btn-sm btn-outline-secondary rounded-2"><i class="fa-solid fa-arrow-left me-1"></i> Volver al Portal</a>
+            <div class="d-flex align-items-center gap-2">
+                <a href="{{ route('memory.index') }}" class="btn btn-sm btn-outline-primary font-mono fw-semibold">
+                    <i class="fa-solid fa-hard-drive me-1"></i> Almacenamiento / Usuarios
+                </a>
+                <a href="/" class="btn btn-sm btn-outline-secondary rounded-2"><i class="fa-solid fa-arrow-left me-1"></i> Volver al Portal</a>
+            </div>
         </div>
     </div>
 
